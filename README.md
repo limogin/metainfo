@@ -233,7 +233,7 @@ También detecta metadatos específicos de dispositivos como números de serie d
 
 ## Licencia
 
-Este proyecto está licenciado bajo [tu licencia aquí]
+Este proyecto está licenciado bajo [AGPL-3.0](LICENSE)
 
 ## Contribuciones
 
