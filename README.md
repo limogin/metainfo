@@ -52,22 +52,8 @@ graph TD
     end
     
     L -->|Lee/Escribe| O[Archivos con metadatos]
-    
-    style A fill:#f9d77e,stroke:#333,stroke-width:1px
-    style B fill:#a8d8ea,stroke:#333,stroke-width:1px
-    style C fill:#a8d8ea,stroke:#333,stroke-width:1px
-    style D fill:#a8d8ea,stroke:#333,stroke-width:1px
-    style E fill:#a8d8ea,stroke:#333,stroke-width:1px
-    style F fill:#a8d8ea,stroke:#333,stroke-width:1px
-    style G fill:#a8d8ea,stroke:#333,stroke-width:1px
-    style H fill:#c7e5b4,stroke:#333,stroke-width:1px
-    style I fill:#c7e5b4,stroke:#333,stroke-width:1px
-    style J fill:#c7e5b4,stroke:#333,stroke-width:1px
-    style K fill:#c7e5b4,stroke:#333,stroke-width:1px
-    style L fill:#f9a4a4,stroke:#333,stroke-width:1px
-    style M fill:#f9a4a4,stroke:#333,stroke-width:1px
-    style N fill:#f9a4a4,stroke:#333,stroke-width:1px
-    style O fill:#d0d0d0,stroke:#333,stroke-width:1px
+   
+
 ```
 
 Este diagrama representa:
