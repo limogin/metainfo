@@ -5,10 +5,11 @@ MetaInfo es una herramienta para inspeccionar y manipular metadatos de archivos.
 ## Características
 
 - **Análisis recursivo**: Procesa archivos en el directorio especificado y todas sus subcarpetas
-- **Generación de informes**: Crea informes en formato Markdown y opcionalmente PDF
+- **Generación de informes**: Crea informes en formato Markdown, HTML y opcionalmente PDF con portada profesional e índice
 - **Limpieza de metadatos**: Elimina todos los metadatos o solo aquellos considerados sensibles
 - **Detección multilingüe**: Detecta información sensible en español, inglés, francés, alemán, italiano y portugués
 - **Formatos soportados**: Imágenes (JPG, PNG, GIF, WEBP, BMP), documentos (PDF, DOCX, ODT, XLS, XLSX, PPT, PPTX), multimedia (MP3, MP4, AVI, MOV, WMV, FLV) y más
+- **Manejo robusto de errores**: Sistema centralizado de mensajes y validación de parámetros
 
 ## Basado en ExifTool
 
@@ -31,6 +32,8 @@ graph TD
     B -->|Parsea argumentos| C[MetaInfo Core]
     
     subgraph "Capa de Aplicación"
+    C -->|Validación de parámetros| P[ParameterValidator]
+    C -->|Muestra mensajes| Q[Messages]
     C -->|Escanea archivos| D[Scanner de Archivos]
     C -->|Procesa metadatos| E[Procesador de Metadatos]
     C -->|Genera reportes| F[Generador de Reportes]
@@ -41,6 +44,7 @@ graph TD
     D -->|Encuentra archivos| H[Sistema de archivos]
     E -->|Extrae metadatos| I[Wrapper ExifTool]
     F -->|Crea MD| J[Markdown]
+    F -->|Crea HTML| R[HTML]
     F -->|Crea PDF| K[Pandoc/XeLaTeX]
     G -->|Modifica archivos| I
     end
@@ -48,23 +52,37 @@ graph TD
     subgraph "Capa Base"
     I -->|Comunicación| L[ExifTool]
     J --> M[Sistema de archivos]
+    R --> M
     K -->|Conversión| N[Sistema PDF]
     end
     
     L -->|Lee/Escribe| O[Archivos con metadatos]
-   
-
 ```
 
 Este diagrama representa:
 1. El usuario interactúa con la interfaz de línea de comandos (CLI)
 2. La aplicación parsea los argumentos y activa el núcleo de MetaInfo
-3. MetaInfo utiliza diferentes módulos según la tarea solicitada
-4. Estos módulos se comunican con servicios de nivel inferior
-5. En la base, ExifTool realiza las operaciones de lectura/escritura de metadatos
-6. Pandoc y XeLaTeX se utilizan opcionalmente para la generación de PDF
+3. ParameterValidator verifica y completa los parámetros necesarios
+4. Messages proporciona una interfaz centralizada para todos los mensajes al usuario
+5. MetaInfo utiliza diferentes módulos según la tarea solicitada
+6. Estos módulos se comunican con servicios de nivel inferior
+7. En la base, ExifTool realiza las operaciones de lectura/escritura de metadatos
+8. Pandoc y XeLaTeX se utilizan opcionalmente para la generación de PDF con portada e índice
 
 Para un análisis más detallado de la arquitectura del sistema, consulta el [diagrama de arquitectura de capas](docs/arquitectura_capas.md).
+
+## Clases Principales
+
+MetaInfo sigue una arquitectura modular con las siguientes clases principales:
+
+- **MetaInfo**: Clase principal que maneja la entrada del usuario y coordina el procesamiento
+- **Main**: Clase central que gestiona las operaciones principales sobre archivos y metadatos
+- **Reporter**: Genera informes en formatos Markdown, HTML y PDF
+- **Cleaner**: Maneja la limpieza de metadatos de archivos
+- **Messages**: Centraliza todos los mensajes del sistema y proporciona métodos para mostrarlos
+- **ParameterValidator**: Valida y asegura la consistencia de los parámetros de entrada
+- **SupportedExtensions**: Define las extensiones de archivo soportadas
+- **SensitivePatterns**: Define los patrones considerados sensibles para la detección
 
 ## Diseño y Documentación Técnica
 
@@ -89,11 +107,13 @@ Estos documentos técnicos facilitan la comprensión del sistema tanto para nuev
 ## Requisitos
 
 - Python 3.6 o superior
-- Biblioteca exiftool para Python (`pip install pyexiftool`)
+- Biblioteca exiftool para Python (`pip install PyExifTool>=0.5.6`)
 - ExifTool instalado en el sistema (versión 12.15 o superior)
+- PyYAML (`pip install pyyaml>=6.0`) para procesamiento de configuración
 - Pillow (`pip install pillow>=9.0.0`) para procesamiento de imágenes
-- Pandoc (opcional, para generación de PDF)
-- XeLaTeX (opcional, para mejor formato en PDF)
+- Markdown (`pip install markdown>=3.5.0`) para procesamiento de texto
+- PyPandoc (`pip install pypandoc>=1.12`) para conversión a PDF
+- Pandoc y XeLaTeX instalados en el sistema (para generación de PDF)
 
 ## Instalación
 
@@ -112,26 +132,26 @@ sudo yum install perl-Image-ExifTool
 #### En Windows o Mac:
 Descarga e instala desde la [página oficial de ExifTool](https://exiftool.org/)
 
-### 2. Instalar Pandoc (opcional, para generación de PDF)
+### 2. Instalar Pandoc y XeLaTeX (requerido para generación de PDF)
 
 #### En sistemas basados en Debian/Ubuntu:
 ```bash
-sudo apt install pandoc texlive-xetex
+sudo apt install pandoc texlive-xetex texlive-latex-extra texlive-fonts-recommended texlive-lang-spanish
 ```
 
 #### En sistemas basados en RHEL/CentOS:
 ```bash
-sudo yum install pandoc texlive-xetex
+sudo yum install pandoc texlive-xetex texlive-latex-extra texlive-collection-fontsrecommended texlive-collection-langspanish
 ```
 
 #### En Windows o Mac:
-Descarga e instala desde la [página oficial de Pandoc](https://pandoc.org/installing.html)
+Descarga e instala desde la [página oficial de Pandoc](https://pandoc.org/installing.html) y [TeX Live](https://www.tug.org/texlive/) o [MiKTeX](https://miktex.org/)
 
 ### 3. Clonar el repositorio e instalar dependencias de Python
 
 ```bash
-git clone https://github.com/tu-usuario/metatool.git
-cd metatool
+git clone https://github.com/tu-usuario/metainfo.git
+cd metainfo
 pip install -r requirements.txt
 ```
 
@@ -163,16 +183,16 @@ python metainfo.py --i /ruta/a/carpeta --report_all
 python metainfo.py --i /ruta/a/carpeta --report_sensitive
 ```
 
-### Generar un informe en PDF
+### Generar un informe en PDF con portada e índice
 
 ```bash
 python metainfo.py --i /ruta/a/carpeta --report_all --pdf
 ```
 
-### Mostrar solo datos sensibles en el informe
+### Generar un informe en HTML
 
 ```bash
-python metainfo.py --i /ruta/a/carpeta --report_sensitive
+python metainfo.py --i /ruta/a/carpeta --report_all --html
 ```
 
 ### Limpiar todos los metadatos de archivos
@@ -219,7 +239,8 @@ python metainfo.py --show_mimes
 - `--report_sensitive`: Genera un informe solo con datos sensibles (predeterminado: False)
 - `--wipe_all`: Elimina todos los metadatos de los archivos
 - `--wipe_sensitive`: Elimina solo los metadatos sensibles de los archivos
-- `--pdf`: Genera también un informe en formato PDF (requiere Pandoc y XeLaTeX)
+- `--pdf`: Genera también un informe en formato PDF con portada e índice (requiere Pandoc y XeLaTeX)
+- `--html`: Genera un informe en formato HTML para visualización en navegador
 - `--md`: Genera un informe en formato Markdown (predeterminado: True)
 - `--show_patterns`: Muestra los patrones considerados datos sensibles y sale
 - `--show_mimes`: Muestra los tipos de archivo soportados y sale
@@ -227,7 +248,7 @@ python metainfo.py --show_mimes
 
 ## Ejemplos de uso
 
-### Analizar fotos de vacaciones y generar un PDF
+### Analizar fotos de vacaciones y generar un PDF con portada profesional
 
 ```bash
 python metainfo.py --i ~/Fotos/Vacaciones2023 --o ~/Informes --report_all --pdf
@@ -258,6 +279,32 @@ MetaInfo incluye una amplia lista de patrones para detectar información potenci
 
 También detecta metadatos específicos de dispositivos como números de serie de cámaras, información del creador, y más.
 
+## Formato de los informes
+
+### Informes en Markdown
+Los informes en formato Markdown incluyen:
+- Información general sobre la carpeta analizada
+- Resumen estadístico de archivos con metadatos y datos sensibles
+- Detalle de cada archivo con sus metadatos
+- Identificación visual de información sensible
+- Recomendaciones de seguridad
+
+### Informes en HTML
+Los informes HTML proporcionan:
+- Estructura idéntica al Markdown pero con estilos CSS
+- Formato mejorado para tablas y secciones
+- Colores para resaltar información sensible
+- Diseño responsive para visualización en diferentes dispositivos
+
+### Informes en PDF
+Los informes PDF ofrecen:
+- Portada profesional con título, fecha y nombre del informe
+- Tabla de contenidos navegable
+- Numeración de páginas y encabezados
+- Estilo visual consistente con márgenes de 2cm
+- Formato mejorado para tablas con colores alternos
+- Resaltado de información sensible
+
 ## Pruebas
 
 MetaInfo incluye un conjunto completo de pruebas unitarias y de integración. Para ejecutar las pruebas:
@@ -277,13 +324,15 @@ El sistema verificará automáticamente las dependencias necesarias y tratará d
 
 ## Salida
 
-- Los informes Markdown se guardan como `report.md` en la carpeta de salida
-- Los informes PDF se guardan como `report.pdf` en la carpeta de salida
+- Los informes Markdown se guardan en la carpeta de salida con nombre basado en la fecha y hora
+- Los informes HTML se generan a partir del Markdown con estilos CSS mejorados
+- Los informes PDF incluyen portada profesional, índice y formato mejorado
 
 ## Limitaciones
 
 - La funcionalidad de limpieza de metadatos requiere que ExifTool esté instalado en el sistema
 - La generación de PDF requiere Pandoc y XeLaTeX instalados
+- Algunas características de PDF avanzadas como portadas personalizadas requieren la plantilla Eisvogel de Pandoc
 
 ## Licencia
 

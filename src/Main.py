@@ -7,34 +7,43 @@ try:
     EXIFTOOL_AVAILABLE = True
 except ImportError:
     EXIFTOOL_AVAILABLE = False
-    print("exiftool no está disponible. La funcionalidad será limitada.")
+    from src.Messages import Messages
+    Messages.print_error(Messages.ERROR_EXIFTOOL)
 
 from src.Reporter import Reporter
 from src.Cleaner import Cleaner
 from src.SupportedExtensions import SupportedExtensions
 from src.SensitivePatterns import SensitivePatterns
+from src.Messages import Messages
+from src.ParameterValidator import ParameterValidator
 
 class Main: 
 
     def __init__(self, src_path, out_path):
         if src_path is None:
-            print("Error: No se ha especificado la carpeta de entrada. Use --i ruta_carpeta")
+            Messages.print_error(Messages.ERROR_NO_INPUT_FOLDER)
             sys.exit(1)
             
         if not os.path.exists(src_path):
-            print(f"Error: La carpeta {src_path} no existe")
+            Messages.print_error(Messages.ERROR_FOLDER_NOT_EXISTS, src_path)
             sys.exit(1)
             
         self.src_path = src_path
         self.out_path = out_path if out_path is not None else "./"
         
         # Crear el directorio de salida si no existe
-        if not os.path.exists(self.out_path):
-            os.makedirs(self.out_path)
+        ParameterValidator.validate_path(self.out_path, create_if_missing=True)
             
         # Establecer las extensiones y patrones sensibles utilizando las clases de constantes
         self.extensions = SupportedExtensions.get_all_extensions()
         self.sensitive_patterns = SensitivePatterns.get_all_patterns()
+        
+        # Asignar la variable global EXIFTOOL_AVAILABLE como atributo de instancia
+        self.EXIFTOOL_AVAILABLE = EXIFTOOL_AVAILABLE
+        
+        # Inicializar atributo args con valores por defecto
+        self.args = ParameterValidator.create_default_args()
+        Messages.print_debug(Messages.DEBUG_MAIN_INIT)
             
         # Inicializar los manejadores especializados
         self.reporter = Reporter(self)
@@ -100,6 +109,29 @@ class Main:
         Returns:
             tuple: (ruta al archivo markdown, ruta al archivo pdf) o (None, None) en caso de error
         """
+        # Depuración: Verificar si los argumentos están configurados correctamente
+        verbose = ParameterValidator.safe_get(self.args, 'verbose', False)
+        
+        # Obtener valores de forma segura
+        pdf_value = ParameterValidator.safe_get(self.args, 'pdf', False)
+        html_value = ParameterValidator.safe_get(self.args, 'html', True)
+        only_sensitive = ParameterValidator.safe_get(self.args, 'only_sensitive', False)
+                
+        Messages.print_debug(Messages.DEBUG_PDF_ENABLED, pdf_value, verbose=verbose)
+        Messages.print_debug(Messages.DEBUG_HTML_ENABLED, html_value, verbose=verbose)
+        
+        if only_sensitive:
+            Messages.print_info("Generando informe solo con datos sensibles")
+            
+        # Asegurar que Reporter tenga acceso a estos argumentos
+        if ParameterValidator.safe_get(self, 'reporter', None) is not None:
+            # Para asegurar que los args se pasan correctamente, hacer una asignación explícita
+            self.reporter.args = self.args
+            
+            # Verificar que el valor de pdf se mantiene en reporter.args
+            reporter_pdf = ParameterValidator.safe_get(self.reporter.args, 'pdf', None)
+            Messages.print_debug(f"DEBUG-Main-report - Valor PDF transmitido a Reporter: {reporter_pdf}", verbose=verbose)
+            
         # Inicializar estadísticas y colectores
         metadata_info = {
             'total_files': 0,
@@ -112,6 +144,11 @@ class Main:
         # Procesar el directorio recursivamente
         self._process_directory_for_report(self.src_path, metadata_info)
         
+        # Verificar una última vez que reporter.args contiene el valor correcto de pdf
+        if hasattr(self.reporter, 'args') and hasattr(self.reporter.args, 'pdf'):
+            reporter_pdf_final = self.reporter.args.pdf
+            Messages.print_debug(f"DEBUG-Main-report - Valor final PDF en Reporter antes de generar reporte: {reporter_pdf_final}", verbose=verbose)
+            
         # Generar el informe utilizando el Reporter
         return self.reporter.generate_report(self.src_path, metadata_info)
     
@@ -125,6 +162,8 @@ class Main:
         """
         lower_extensions = tuple(ext.lower() for ext in self.extensions)
         upper_extensions = tuple(ext.upper() for ext in self.extensions)
+        only_sensitive = ParameterValidator.safe_get(self.args, 'only_sensitive', False)
+        verbose = ParameterValidator.safe_get(self.args, 'verbose', False)
         
         for item in os.listdir(directory):
             item_path = os.path.join(directory, item)
@@ -134,7 +173,7 @@ class Main:
                 ext = os.path.splitext(item_path)[1].lower()
                 if ext and (item.lower().endswith(lower_extensions) or item.upper().endswith(upper_extensions)):
                     metadata_info['total_files'] += 1
-                    print(f"Leyendo {item_path} ...")
+                    Messages.print_debug(Messages.DEBUG_READING_FILE, item_path, verbose=verbose)
                     
                     # Actualizar estadísticas de extensiones
                     if ext not in metadata_info['extensions_stats']:
@@ -155,6 +194,8 @@ class Main:
                     }
                     
                     has_metadata = False
+                    has_sensitive_data = False
+                    
                     for data in metadata:
                         if hasattr(data, 'items') and callable(data.items):
                             for key, val in data.items():
@@ -164,15 +205,18 @@ class Main:
                                 # Verificar si es sensible
                                 is_sensitive, matching_patterns = self._check_sensitive_data(key, val)
                                 
-                                metadata_entry = {
-                                    'key': key,
-                                    'value': val,
-                                    'is_sensitive': is_sensitive,
-                                    'matching_patterns': matching_patterns
-                                }
-                                file_info['metadata'].append(metadata_entry)
+                                # Si solo queremos datos sensibles, solo añadir los que son sensibles
+                                if not only_sensitive or is_sensitive:
+                                    metadata_entry = {
+                                        'key': key,
+                                        'value': val,
+                                        'is_sensitive': is_sensitive,
+                                        'matching_patterns': matching_patterns
+                                    }
+                                    file_info['metadata'].append(metadata_entry)
                                 
                                 if is_sensitive:
+                                    has_sensitive_data = True
                                     file_info['has_sensitive'] = True
                     
                     # Solo incluir archivos con metadatos
@@ -180,12 +224,17 @@ class Main:
                         metadata_info['files_with_metadata'] += 1
                         metadata_info['extensions_stats'][ext]['with_metadata'] += 1
                         
-                        if file_info['has_sensitive']:
+                        if has_sensitive_data:
                             metadata_info['files_with_sensitive'] += 1
                             metadata_info['extensions_stats'][ext]['with_sensitive'] += 1
                         
-                        # Incluir todos los archivos con metadatos
-                        metadata_info['files_info'].append(file_info)
+                        # Si solo queremos datos sensibles, solo incluir archivos que tengan datos sensibles
+                        if not only_sensitive or has_sensitive_data:
+                            if only_sensitive:
+                                # Si solo queremos datos sensibles, filtrar los metadatos para incluir solo los sensibles
+                                file_info['metadata'] = [entry for entry in file_info['metadata'] if entry['is_sensitive']]
+                                
+                            metadata_info['files_info'].append(file_info)
             
             elif os.path.isdir(item_path):
                 # Procesar subdirectorios recursivamente

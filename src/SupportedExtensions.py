@@ -26,7 +26,7 @@ class SupportedExtensions:
         "txt",
         "md",
         "ppt",
-        "pptx",
+        "pptx", 
         "odp",
         "xls",
         "xlsx",

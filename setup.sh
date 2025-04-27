@@ -12,11 +12,29 @@ if ! command -v exiftool &> /dev/null; then
     sudo apt-get install -y libimage-exiftool-perl
 fi
 
-# Verificar si se requieren dependencias de sistema para reportlab y pypandoc
+# Verificar si se requieren dependencias de sistema para reportlab, pypandoc y pyyaml
 echo "Verificando dependencias del sistema..."
 if ! command -v pandoc &> /dev/null; then
     echo "pandoc no está instalado. Instalando..."
     sudo apt-get install -y pandoc
+fi
+
+# Verificar si tenemos texlive-xetex para la generación de PDF
+if ! command -v xelatex &> /dev/null; then
+    echo "XeLaTeX no está instalado. Instalando..."
+    sudo apt-get install -y texlive-xetex texlive-latex-extra
+fi
+
+# Verificar explícitamente si PyYAML está instalado
+if ! python3 -c "import yaml" &> /dev/null; then
+    echo "PyYAML no está instalado. Instalando..."
+    pip3 install PyYAML
+fi
+
+# Verificar explícitamente si Markdown está instalado
+if ! python3 -c "import markdown" &> /dev/null; then
+    echo "markdown no está instalado. Instalando..."
+    pip3 install markdown
 fi
 
 # Dependencias para PIL/Pillow (si se usa para procesamiento de imágenes)
