@@ -6,12 +6,7 @@ Este documento presenta la arquitectura modular del sistema MetaInfo, mostrando 
 
 ```mermaid
 graph TB
-    %% Definición de estilos
-    classDef core fill:#f9d5e5,stroke:#333,stroke-width:1px;
-    classDef utilities fill:#eeeeee,stroke:#333,stroke-width:1px;
-    classDef io fill:#d5f9e5,stroke:#333,stroke-width:1px;
-    classDef external fill:#d5e5f9,stroke:#333,stroke-width:1px;
-
+    
     %% Módulo principal
     subgraph CoreModule["Módulo Principal"]
         Main["Main"]:::core
