@@ -2,7 +2,7 @@ PyExifTool>=0.5.6
 reportlab
 pypandoc
 pyyaml>=6.0
-pillow
+pillow>=9.0.0  # Para procesamiento de imágenes
 pytest
 pytest-cov
 mock

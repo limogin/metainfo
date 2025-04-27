@@ -100,23 +100,45 @@ class Cleaner:
         try:
             # Obtener todos los metadatos del archivo
             metadata = self.main.inspect(file_path)
+            sensitive_found = False
             
             with self.main.exiftool.ExifToolHelper() as et:
                 # Para cada elemento en los metadatos
-                for d in metadata:
-                    if hasattr(d, 'items') and callable(d.items):
-                        for key, val in d.items():
+                if isinstance(metadata, list) and len(metadata) > 0:
+                    # Si metadata es una lista (formato típico de ExifTool)
+                    for d in metadata:
+                        if hasattr(d, 'items') and callable(d.items):
+                            for key, val in d.items():
+                                # Verificar si contiene datos sensibles
+                                is_sensitive, matching_patterns = self.main._check_sensitive_data(key, val)
+                                
+                                # Si es sensible, eliminarlo
+                                if is_sensitive:
+                                    sensitive_found = True
+                                    print(f"  - Eliminando campo sensible: {key} ({', '.join(matching_patterns)})")
+                                    # Construir el comando para eliminar esta etiqueta específica
+                                    # El formato es -TAG= para eliminar una etiqueta específica
+                                    et.execute(f"-{key}=", "-overwrite_original", file_path)
+                elif isinstance(metadata, dict):
+                    # Si metadata es un diccionario
+                    for key, val in metadata.items():
+                        # Ignorar el campo 'SourceFile' que es añadido por ExifTool
+                        if key != 'SourceFile':
                             # Verificar si contiene datos sensibles
                             is_sensitive, matching_patterns = self.main._check_sensitive_data(key, val)
                             
                             # Si es sensible, eliminarlo
                             if is_sensitive:
+                                sensitive_found = True
                                 print(f"  - Eliminando campo sensible: {key} ({', '.join(matching_patterns)})")
                                 # Construir el comando para eliminar esta etiqueta específica
-                                # El formato es -TAG= para eliminar una etiqueta específica
                                 et.execute(f"-{key}=", "-overwrite_original", file_path)
             
-            print(f"Limpieza selectiva de {file_path} completada")
+            if sensitive_found:
+                print(f"Limpieza selectiva de {file_path} completada")
+            else:
+                print(f"No se encontraron datos sensibles en {file_path}")
             
         except Exception as e:
-            print(f"Error al limpiar selectivamente {file_path}: {str(e)}") 
+            print(f"Error al limpiar selectivamente {file_path}: {str(e)}")
+            # No propagar la excepción para continuar con otros archivos 

@@ -77,6 +77,10 @@ class Main:
         key_str = str(key).lower()
         val_str = str(val).lower()
         
+        # Hacer una excepción para ciertas claves
+        if key_str == 'author' and not any(pattern.lower() in val_str for pattern in self.sensitive_patterns):
+            return False, []
+            
         # Verificar si algún patrón sensible coincide con la clave o el valor
         is_sensitive = False
         matching_patterns = []
@@ -94,9 +98,98 @@ class Main:
         Genera un informe de metadatos para los archivos en el directorio especificado.
         
         Returns:
-            bool: True si el informe se generó correctamente, False en caso contrario
+            tuple: (ruta al archivo markdown, ruta al archivo pdf) o (None, None) en caso de error
         """
-        return self.reporter.generate_report(self.src_path, self.out_path)
+        # Inicializar estadísticas y colectores
+        metadata_info = {
+            'total_files': 0,
+            'files_with_metadata': 0,
+            'files_with_sensitive': 0,
+            'extensions_stats': {},
+            'files_info': []
+        }
+        
+        # Procesar el directorio recursivamente
+        self._process_directory_for_report(self.src_path, metadata_info)
+        
+        # Generar el informe utilizando el Reporter
+        return self.reporter.generate_report(self.src_path, metadata_info)
+    
+    def _process_directory_for_report(self, directory, metadata_info):
+        """
+        Procesa recursivamente un directorio recopilando información de metadatos.
+        
+        Args:
+            directory: Ruta al directorio a procesar
+            metadata_info: Diccionario donde se almacena la información recopilada
+        """
+        lower_extensions = tuple(ext.lower() for ext in self.extensions)
+        upper_extensions = tuple(ext.upper() for ext in self.extensions)
+        
+        for item in os.listdir(directory):
+            item_path = os.path.join(directory, item)
+            
+            if os.path.isfile(item_path):
+                # Verificar si el archivo tiene una extensión soportada
+                ext = os.path.splitext(item_path)[1].lower()
+                if ext and (item.lower().endswith(lower_extensions) or item.upper().endswith(upper_extensions)):
+                    metadata_info['total_files'] += 1
+                    print(f"Leyendo {item_path} ...")
+                    
+                    # Actualizar estadísticas de extensiones
+                    if ext not in metadata_info['extensions_stats']:
+                        metadata_info['extensions_stats'][ext] = {
+                            'count': 0,
+                            'with_metadata': 0,
+                            'with_sensitive': 0
+                        }
+                    metadata_info['extensions_stats'][ext]['count'] += 1
+                    
+                    # Recopilar metadatos
+                    metadata = self.inspect(item_path)
+                    file_info = {
+                        'file_path': item_path,
+                        'total_metadata': 0,
+                        'has_sensitive': False,
+                        'metadata': []
+                    }
+                    
+                    has_metadata = False
+                    for data in metadata:
+                        if hasattr(data, 'items') and callable(data.items):
+                            for key, val in data.items():
+                                has_metadata = True
+                                file_info['total_metadata'] += 1
+                                
+                                # Verificar si es sensible
+                                is_sensitive, matching_patterns = self._check_sensitive_data(key, val)
+                                
+                                metadata_entry = {
+                                    'key': key,
+                                    'value': val,
+                                    'is_sensitive': is_sensitive,
+                                    'matching_patterns': matching_patterns
+                                }
+                                file_info['metadata'].append(metadata_entry)
+                                
+                                if is_sensitive:
+                                    file_info['has_sensitive'] = True
+                    
+                    # Solo incluir archivos con metadatos
+                    if has_metadata:
+                        metadata_info['files_with_metadata'] += 1
+                        metadata_info['extensions_stats'][ext]['with_metadata'] += 1
+                        
+                        if file_info['has_sensitive']:
+                            metadata_info['files_with_sensitive'] += 1
+                            metadata_info['extensions_stats'][ext]['with_sensitive'] += 1
+                        
+                        # Incluir todos los archivos con metadatos
+                        metadata_info['files_info'].append(file_info)
+            
+            elif os.path.isdir(item_path):
+                # Procesar subdirectorios recursivamente
+                self._process_directory_for_report(item_path, metadata_info)
         
     def wipe(self):
         """

@@ -16,6 +16,11 @@ Para entender mejor la arquitectura y funcionamiento de MetaInfo, consulta la si
 
 - [Modelo de Dominio](docs/modelo_dominio.md): Diagrama y descripción de las entidades principales del sistema y sus relaciones.
 - [Arquitectura de Capas](docs/arquitectura_capas.md): Diagrama y explicación de la arquitectura por capas de la aplicación.
+- [Diagrama de Clases](docs/diagrama_clases.md): Diseño estático de clases con atributos, métodos y relaciones.
+- [Diagrama de Flujo de Datos](docs/diagrama_flujo_datos.md): Representación del flujo de información a través del sistema.
+- [Arquitectura Modular](docs/arquitectura_modular.md): Vista modular del sistema mostrando la organización de componentes.
+- [Casos de Uso](docs/casos_uso.md): Descripción detallada de los casos de uso y escenarios de usuario.
+- [Diagramas de Interacción](docs/diagramas_interaccion.md): Diagramas de secuencia y colaboración mostrando interacciones dinámicas.
 - [Pruebas](tests/README.md): Documentación sobre las pruebas automatizadas del sistema.
 
 ## Basado en ExifTool
@@ -74,12 +79,32 @@ Este diagrama representa:
 
 Para un análisis más detallado de la arquitectura del sistema, consulta el [diagrama de arquitectura de capas](docs/arquitectura_capas.md).
 
+## Diseño y Documentación Técnica
+
+Para proporcionar una comprensión completa del diseño del sistema, se han creado diversos documentos técnicos que abordan diferentes aspectos de la arquitectura:
+
+- **[Modelo de Dominio](docs/modelo_dominio.md)**: Presenta las entidades principales del sistema y sus relaciones desde una perspectiva de negocio.
+
+- **[Arquitectura de Capas](docs/arquitectura_capas.md)**: Muestra la organización del sistema en capas, desde la interfaz de usuario hasta la infraestructura.
+
+- **[Diagrama de Clases](docs/diagrama_clases.md)**: Proporciona un diseño estático detallado de las clases del sistema, con sus atributos, métodos y relaciones.
+
+- **[Diagrama de Flujo de Datos](docs/diagrama_flujo_datos.md)**: Ilustra cómo fluye la información a través del sistema, desde la entrada hasta la generación de informes o limpieza.
+
+- **[Arquitectura Modular](docs/arquitectura_modular.md)**: Presenta una vista modular del sistema, mostrando los componentes principales y cómo interactúan entre sí.
+
+- **[Casos de Uso](docs/casos_uso.md)**: Describe detalladamente los diversos casos de uso del sistema y proporciona escenarios prácticos para diferentes perfiles de usuario.
+
+- **[Diagramas de Interacción](docs/diagramas_interaccion.md)**: Muestra el comportamiento dinámico del sistema mediante diagramas de secuencia, colaboración y estados.
+
+Estos documentos técnicos facilitan la comprensión del sistema tanto para nuevos desarrolladores como para usuarios avanzados interesados en su funcionamiento interno.
 
 ## Requisitos
 
 - Python 3.6 o superior
 - Biblioteca exiftool para Python (`pip install pyexiftool`)
 - ExifTool instalado en el sistema (versión 12.15 o superior)
+- Pillow (`pip install pillow>=9.0.0`) para procesamiento de imágenes
 - Pandoc (opcional, para generación de PDF)
 - XeLaTeX (opcional, para mejor formato en PDF)
 
@@ -121,6 +146,20 @@ Descarga e instala desde la [página oficial de Pandoc](https://pandoc.org/insta
 git clone https://github.com/tu-usuario/metatool.git
 cd metatool
 pip install -r requirements.txt
+```
+
+### 4. Verificar dependencias
+
+Para verificar que todas las dependencias necesarias están instaladas:
+
+```bash
+make check-dependencies
+```
+
+O para instalar automáticamente las dependencias de desarrollo (recomendado para contribuyentes):
+
+```bash
+make requirements-dev
 ```
 
 ## Uso
@@ -234,7 +273,20 @@ También detecta metadatos específicos de dispositivos como números de serie d
 
 ## Pruebas
 
-MetaInfo incluye un conjunto completo de pruebas unitarias y de integración. Para más información sobre cómo ejecutar las pruebas, consulta la [documentación de pruebas](tests/README.md).
+MetaInfo incluye un conjunto completo de pruebas unitarias y de integración. Para ejecutar las pruebas:
+
+```bash
+# Ejecutar todas las pruebas
+make test
+
+# Verificar dependencias de pruebas
+make check-dependencies
+
+# Ejecutar pruebas con informe de cobertura
+make test-coverage
+```
+
+El sistema verificará automáticamente las dependencias necesarias y tratará de instalar las que falten. Para más información sobre las pruebas, consulta la [documentación de pruebas](tests/README.md).
 
 ## Salida
 

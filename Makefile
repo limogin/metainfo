@@ -3,8 +3,8 @@
 .PHONY: all clean build run install requirements test test-unit test-integration test-coverage
 
 # Variables
-PYTHON = python
-PIP = pip
+PYTHON = python3
+PIP = pip3
 MAIN = metainfo.py
 OUTPUT = dist/metainfo
 BINNAME = metainfo
@@ -24,6 +24,14 @@ requirements:
 requirements-dev: requirements
 	$(PIP) install -r requirements-dev.txt
 
+# Verificar dependencias críticas
+check-dependencies:
+	@echo "Verificando dependencias críticas..."
+	@$(PYTHON) -c "import PIL" || (echo "Error: Pillow no está instalado. Instalando..." && $(PIP) install pillow>=9.0.0)
+	@echo "Verificando versión de Python..."
+	@$(PYTHON) -c "import sys; assert sys.version_info[0] >= 3, 'Se requiere Python 3+'; print('✓ Python {} detectado'.format(sys.version.split()[0]))"
+	@echo "Dependencias OK"
+
 # Construir el binario ejecutable
 build:
 	pyinstaller --clean --onefile --name $(BINNAME) --hidden-import=PIL --hidden-import=PIL._imagingtk --hidden-import=PIL._tkinter_finder $(MAIN)
@@ -37,21 +45,21 @@ run-bin:
 	$(OUTPUT)
 
 # Ejecutar todas las pruebas
-test: requirements-dev
+test: requirements-dev check-dependencies
 	$(PYTHON) tests/run_tests.py
 
 # Ejecutar pruebas unitarias
-test-unit: requirements-dev
+test-unit: requirements-dev check-dependencies
 	$(PYTHON) -m unittest tests/test_metainfo.py
 
 # Ejecutar pruebas de integración
-test-integration: requirements-dev
+test-integration: requirements-dev check-dependencies
 	$(PYTHON) -m unittest tests/test_integration.py
 
 # Ejecutar pruebas con informe de cobertura
-test-coverage: requirements-dev
-	pytest --cov=src tests/
-	coverage html
+test-coverage: requirements-dev check-dependencies
+	$(PYTHON) -m pytest --cov=src tests/
+	$(PYTHON) -m coverage html
 	@echo "Informe de cobertura generado en htmlcov/index.html"
 
 # Limpiar archivos generados
@@ -65,12 +73,13 @@ help:
 	@echo "  install  - Instalar el binario en /usr/local/bin/"
 	@echo "  requirements  - Instalar todas las dependencias"
 	@echo "  requirements-dev  - Instalar dependencias de desarrollo y pruebas"
+	@echo "  check-dependencies - Verificar dependencias críticas"
 	@echo "  build    - Construir el binario ejecutable con PyInstaller"
 	@echo "  run      - Ejecutar el programa con Python"
 	@echo "  run-bin  - Ejecutar el binario generado"
 	@echo "  test     - Ejecutar todas las pruebas"
 	@echo "  test-unit - Ejecutar solo pruebas unitarias"
 	@echo "  test-integration - Ejecutar solo pruebas de integración"
-	@echo "  test-coverage - Ejecutar pruebas y generar informe de cobertura"
+	@echo "  test-coverage - Ejecutar pruebas con informe de cobertura"
 	@echo "  clean    - Eliminar archivos generados"
 	@echo "  help     - Mostrar esta ayuda" 
