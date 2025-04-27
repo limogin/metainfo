@@ -10,19 +10,6 @@ MetaInfo es una herramienta para inspeccionar y manipular metadatos de archivos.
 - **Detección multilingüe**: Detecta información sensible en español, inglés, francés, alemán, italiano y portugués
 - **Formatos soportados**: Imágenes (JPG, PNG, GIF, WEBP, BMP), documentos (PDF, DOCX, ODT, XLS, XLSX, PPT, PPTX), multimedia (MP3, MP4, AVI, MOV, WMV, FLV) y más
 
-## Documentación
-
-Para entender mejor la arquitectura y funcionamiento de MetaInfo, consulta la siguiente documentación adicional:
-
-- [Modelo de Dominio](docs/modelo_dominio.md): Diagrama y descripción de las entidades principales del sistema y sus relaciones.
-- [Arquitectura de Capas](docs/arquitectura_capas.md): Diagrama y explicación de la arquitectura por capas de la aplicación.
-- [Diagrama de Clases](docs/diagrama_clases.md): Diseño estático de clases con atributos, métodos y relaciones.
-- [Diagrama de Flujo de Datos](docs/diagrama_flujo_datos.md): Representación del flujo de información a través del sistema.
-- [Arquitectura Modular](docs/arquitectura_modular.md): Vista modular del sistema mostrando la organización de componentes.
-- [Casos de Uso](docs/casos_uso.md): Descripción detallada de los casos de uso y escenarios de usuario.
-- [Diagramas de Interacción](docs/diagramas_interaccion.md): Diagramas de secuencia y colaboración mostrando interacciones dinámicas.
-- [Pruebas](tests/README.md): Documentación sobre las pruebas automatizadas del sistema.
-
 ## Basado en ExifTool
 
 MetaInfo se basa en ExifTool, una potente biblioteca de código abierto que permite leer, escribir y manipular metadatos en una amplia variedad de archivos. ExifTool es capaz de extraer información técnica y metadatos de miles de tipos de archivo diferentes, incluyendo:
