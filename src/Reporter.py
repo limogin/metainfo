@@ -38,12 +38,20 @@ class Reporter:
             with open(dst_fn_md, "w") as f:
                 f.write("# METAINFO REPORT\n")
                 f.write(f"- Path: {src_path}\n\n")
-                f.write(f"- Fecha: {datetime.datetime.now()}\n")                
-                files_found = self._process_directory(src_path, f, lower_extensions, upper_extensions)
+                f.write(f"- Fecha: {datetime.datetime.now()}\n")
+                
+                # Añadir una nota si solo se reportan datos sensibles
+                if self.args and self.args.only_sensitive:
+                    f.write("\n> **Nota:** Este informe muestra SOLO los metadatos potencialmente sensibles.\n\n")
+                    
+                files_found, sensitive_found = self._process_directory(src_path, f, lower_extensions, upper_extensions)
                 
                 if not files_found:
                     f.write("\nNo se encontraron archivos con las extensiones soportadas.\n")
                     print("No se encontraron archivos con las extensiones soportadas.")
+                elif self.args and self.args.only_sensitive and not sensitive_found:
+                    f.write("\nNo se encontraron datos sensibles en los archivos analizados.\n")
+                    print("No se encontraron datos sensibles en los archivos analizados.")
             
             print(f"Informe MD generado en: {dst_fn_md}")
             if self.args and self.args.pdf:
@@ -69,6 +77,7 @@ class Reporter:
             bool: True si se encontraron archivos, False en caso contrario
         """
         files_found = False
+        sensible_data_found = False
         
         for item in os.listdir(directory):
             item_path = os.path.join(directory, item)
@@ -77,31 +86,52 @@ class Reporter:
                 print(f"Leyendo {item_path} ...")
                 files_found = True
                 metadata = self.main.inspect(item_path)
-                file_handle.write(f"\n## {item_path}\n")                        
-                for d in metadata:
-                  if hasattr(d, 'items') and callable(d.items):
-                    for key, val in d.items():
-                      # Comprobar si contiene datos sensibles
-                      is_sensitive, matching_patterns = self.main._check_sensitive_data(key, val)
-                      
-                      # Marcar el campo como sensible si se encontró una coincidencia
-                      if is_sensitive:
-                        file_handle.write(f"- {key}: {val} ⚠️ **[DATO POTENCIALMENTE SENSIBLE: {', '.join(matching_patterns)}]**\n")
-                      else:
-                        if self.args and self.args.only_sensitive:
-                          continue
-                        file_handle.write(f"- {key}: {val}\n")
-                  else:
-                    file_handle.write(f"- Formato no reconocido: {d}\n")
+                
+                # Verificar si hay datos sensibles antes de escribir la cabecera del archivo
+                has_sensitive_data = False
+                if self.args and self.args.only_sensitive:
+                    for d in metadata:
+                        if hasattr(d, 'items') and callable(d.items):
+                            for key, val in d.items():
+                                is_sensitive, _ = self.main._check_sensitive_data(key, val)
+                                if is_sensitive:
+                                    has_sensitive_data = True
+                                    break
+                            if has_sensitive_data:
+                                break
+                else:
+                    has_sensitive_data = True  # Si no estamos filtrando, siempre mostramos el archivo
+                
+                # Solo escribir la cabecera y procesar si hay datos sensibles o no estamos filtrando
+                if has_sensitive_data:
+                    sensible_data_found = sensible_data_found or has_sensitive_data
+                    file_handle.write(f"\n## {item_path}\n")
+                    
+                    for d in metadata:
+                        if hasattr(d, 'items') and callable(d.items):
+                            for key, val in d.items():
+                                # Comprobar si contiene datos sensibles
+                                is_sensitive, matching_patterns = self.main._check_sensitive_data(key, val)
+                                
+                                # Marcar el campo como sensible si se encontró una coincidencia
+                                if is_sensitive:
+                                    file_handle.write(f"- {key}: {val} ⚠️ **[DATO POTENCIALMENTE SENSIBLE: {', '.join(matching_patterns)}]**\n")
+                                elif not self.args or not self.args.only_sensitive:
+                                    # Solo escribir datos no sensibles si no estamos en modo "solo sensibles"
+                                    file_handle.write(f"- {key}: {val}\n")
+                        else:
+                            if not self.args or not self.args.only_sensitive:
+                                file_handle.write(f"- Formato no reconocido: {d}\n")
             
             elif os.path.isdir(item_path):
                 # Procesar subdirectorio
-                subdir_files_found = self._process_directory(item_path, file_handle, lower_extensions, upper_extensions)
-                if subdir_files_found:
-                  file_handle.write(f"\n### Subdirectory: {item_path}\n")
+                subdir_files_found, subdir_sensitive_found = self._process_directory(item_path, file_handle, lower_extensions, upper_extensions)
+                if subdir_files_found and (subdir_sensitive_found or not self.args or not self.args.only_sensitive):
+                    file_handle.write(f"\n### Subdirectory: {item_path}\n")
                 files_found = files_found or subdir_files_found
+                sensible_data_found = sensible_data_found or subdir_sensitive_found
                 
-        return files_found
+        return files_found, sensible_data_found
         
     def _generate_pdf_report(self, md_file, pdf_file):
         """

@@ -10,6 +10,14 @@ MetaInfo es una herramienta para inspeccionar y manipular metadatos de archivos.
 - **Detección multilingüe**: Detecta información sensible en español, inglés, francés, alemán, italiano y portugués
 - **Formatos soportados**: Imágenes (JPG, PNG, GIF, WEBP, BMP), documentos (PDF, DOCX, ODT, XLS, XLSX, PPT, PPTX), multimedia (MP3, MP4, AVI, MOV, WMV, FLV) y más
 
+## Documentación
+
+Para entender mejor la arquitectura y funcionamiento de MetaInfo, consulta la siguiente documentación adicional:
+
+- [Modelo de Dominio](docs/modelo_dominio.md): Diagrama y descripción de las entidades principales del sistema y sus relaciones.
+- [Arquitectura de Capas](docs/arquitectura_capas.md): Diagrama y explicación de la arquitectura por capas de la aplicación.
+- [Pruebas](tests/README.md): Documentación sobre las pruebas automatizadas del sistema.
+
 ## Basado en ExifTool
 
 MetaInfo se basa en ExifTool, una potente biblioteca de código abierto que permite leer, escribir y manipular metadatos en una amplia variedad de archivos. ExifTool es capaz de extraer información técnica y metadatos de miles de tipos de archivo diferentes, incluyendo:
@@ -63,6 +71,9 @@ Este diagrama representa:
 4. Estos módulos se comunican con servicios de nivel inferior
 5. En la base, ExifTool realiza las operaciones de lectura/escritura de metadatos
 6. Pandoc y XeLaTeX se utilizan opcionalmente para la generación de PDF
+
+Para un análisis más detallado de la arquitectura del sistema, consulta el [diagrama de arquitectura de capas](docs/arquitectura_capas.md).
+
 
 ## Requisitos
 
@@ -220,6 +231,10 @@ MetaInfo incluye una amplia lista de patrones para detectar información potenci
 - **Portugués**: nome, endereço, telefone, senha, etc.
 
 También detecta metadatos específicos de dispositivos como números de serie de cámaras, información del creador, y más.
+
+## Pruebas
+
+MetaInfo incluye un conjunto completo de pruebas unitarias y de integración. Para más información sobre cómo ejecutar las pruebas, consulta la [documentación de pruebas](tests/README.md).
 
 ## Salida
 
