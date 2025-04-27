@@ -33,7 +33,7 @@ if __name__ == "__main__":
         try:
             exec(open(test_files_script).read())
         except Exception as e:
-            print(f"Error al generar archivos de prueba: {str(e)}")
+            print("Error al generar archivos de prueba: {}".format(str(e)))
     
     # Ejecutar pruebas
     print("\n===== Ejecutando pruebas =====\n")

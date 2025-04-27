@@ -139,7 +139,7 @@ class TestIntegration(unittest.TestCase):
         # Verificar que la limpieza se completó
         self.assertTrue(result, "La limpieza de metadatos sensibles falló")
     
-    @unittest.skipIf(not os.path.exists('/usr/bin/metainfo'), "Metainfo no está instalado")
+    @unittest.skipIf(not os.path.exists('/usr/local/bin/metainfo'), "Metainfo no está instalado")
     def test_command_line_execution(self):
         """Probar la ejecución desde línea de comandos (requiere instalación)"""
         # Construir y ejecutar el comando
@@ -158,16 +158,16 @@ class TestIntegration(unittest.TestCase):
             
             # Verificar que la ejecución fue exitosa
             self.assertEqual(result.returncode, 0, 
-                           f"La ejecución falló con código {result.returncode}, error: {result.stderr}")
+                           "La ejecución falló con código {}, error: {}".format(result.returncode, result.stderr))
             
             # Verificar que se generó el informe
             self.assertTrue(os.path.exists(os.path.join(self.output_dir, 'report.md')), 
                           "No se generó el archivo report.md")
         
         except subprocess.CalledProcessError as e:
-            self.fail(f"La ejecución del comando falló: {str(e)}, salida: {e.stderr}")
+            self.fail("La ejecución del comando falló: {}, salida: {}".format(str(e), e.stderr))
         except Exception as e:
-            self.fail(f"Error inesperado: {str(e)}")
+            self.fail("Error inesperado: {}".format(str(e)))
 
 if __name__ == '__main__':
     unittest.main() 

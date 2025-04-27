@@ -72,12 +72,12 @@ class TestMetaInfo(unittest.TestCase):
         
         for key, value, expected_sensitive, expected_patterns in test_cases:
             is_sensitive, patterns = self.main._check_sensitive_data(key, value)
-            self.assertEqual(is_sensitive, expected_sensitive, f"Failed for key: {key}, value: {value}")
+            self.assertEqual(is_sensitive, expected_sensitive, "Failed for key: {}, value: {}".format(key, value))
             
             # Verificar que los patrones esperados están en los patrones detectados
             for pattern in expected_patterns:
                 self.assertTrue(any(pattern.lower() in p.lower() for p in patterns), 
-                               f"Pattern {pattern} not detected in {patterns} for key: {key}, value: {value}")
+                               "Pattern {} not detected in {} for key: {}, value: {}".format(pattern, patterns, key, value))
     
     @patch('src.Reporter.Reporter._process_directory')
     def test_report_generation(self, mock_process_directory):
@@ -129,7 +129,7 @@ class TestMetaInfo(unittest.TestCase):
         common_patterns = ['GPS', 'email', 'password', 'teléfono']
         for pattern in common_patterns:
             matching = [p for p in patterns if pattern.lower() in p.lower()]
-            self.assertTrue(len(matching) > 0, f"No se encontró el patrón '{pattern}' en los patrones sensibles")
+            self.assertTrue(len(matching) > 0, "No se encontró el patrón '{}' en los patrones sensibles".format(pattern))
 
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.path.exists')

@@ -20,7 +20,7 @@ def create_jpeg_with_metadata(output_path, metadata):
     
     # Guardar la imagen con metadatos EXIF
     img.save(output_path, exif=generate_exif(metadata))
-    print(f"Imagen JPEG creada en: {output_path}")
+    print("Imagen JPEG creada en: {}".format(output_path))
 
 # Función para crear una imagen PNG con metadatos
 def create_png_with_metadata(output_path, metadata):
@@ -43,7 +43,7 @@ def create_png_with_metadata(output_path, metadata):
     
     # Guardar imagen con metadatos
     img.save(output_path, "PNG", pnginfo=info)
-    print(f"Imagen PNG creada en: {output_path}")
+    print("Imagen PNG creada en: {}".format(output_path))
 
 # Función auxiliar para generar datos EXIF
 def generate_exif(metadata):
@@ -98,7 +98,7 @@ def main():
     create_png_with_metadata(os.path.join(files_dir, 'sensitive.png'), sensitive_metadata)
     create_png_with_metadata(os.path.join(files_dir, 'normal.png'), normal_metadata)
     
-    print("Archivos de prueba creados con éxito en:", files_dir)
+    print("Archivos de prueba creados con éxito en: {}".format(files_dir))
 
 if __name__ == "__main__":
     main() 
