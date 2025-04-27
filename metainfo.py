@@ -2,6 +2,7 @@
 import subprocess 
 import os 
 import sys
+import traceback
 
 # Versión del programa
 VERSION = "1.0.0"
@@ -23,130 +24,145 @@ from src.ParameterValidator import ParameterValidator
 
 class MetaInfo:
     
-  def __init__ (self):
-    parser = argparse.ArgumentParser(description="MetaInfo")
-    parser.add_argument ("--i", nargs='?', help="path to folder to inspect")
-    parser.add_argument ("--o", nargs='?', default="./", help="path to output folder (opcional, por defecto: carpeta actual)")
-    parser.add_argument ("--wipe_all", action="store_true", default=False, help="wipe all metadata (default: False)")
-    parser.add_argument ("--wipe_sensitive", action="store_true", default=False, help="wipe only sensitive metadata (default: False)")
-    parser.add_argument ("--report_all", action="store_true", default=True, help="report all metadata (default: True)")
-    parser.add_argument ("--report_sensitive", action="store_true", default=False, help="report only sensitive metadata (default: False)")
-    parser.add_argument ("--verbose", action="store_true", dest="verbose", help="mostrar información detallada (default: False)")
-    parser.add_argument ("--md", action="store_true", dest="md", default=True, help="generar informe en formato markdown (default: True)")
-    parser.add_argument ("--html", action="store_true", dest="html", default=False, help="generar informe en formato HTML (default: False)")
-    parser.add_argument ("--pdf", action="store_true", dest="pdf", default=False, help="generar informe en formato pdf (default: False)")
-    parser.add_argument ("--show_mimes", action="store_true", default=False, help="mostrar mimes soportados y sale del programa (default: False)")
-    parser.add_argument ("--show_patterns", action="store_true", default=False, help="mostrar solo los patrones de búsqueda considerados sensibles y sale del programa (default: False)")
-    parser.add_argument("--version", 
-                        action="version",
-                        version=f"%(prog)s {VERSION}",
-                        help="Mostrar versión del programa")
-    
-    # Nota sobre formatos de salida
-    parser.epilog = Messages.INFO_REPORT_FORMATS
-    
-    args = parser.parse_args()
-    self.parser = parser
-    self.args = args 
-    self.verbose = args.verbose
-
-    # Asegurarse de que se han establecido valores por defecto para todos los parámetros importantes
-    # Hacerlo una vez al inicio para no repetir verificaciones
-    ParameterValidator.ensure_attr(self.args, 'pdf', False)
-    ParameterValidator.ensure_attr(self.args, 'html', False) 
-    ParameterValidator.ensure_attr(self.args, 'verbose', False)
-    ParameterValidator.ensure_attr(self.args, 'only_sensitive', False)
-    
-    # Determinar si se está generando un informe solo con datos sensibles
-    if ParameterValidator.safe_get(self.args, 'report_sensitive', False):
-        self.args.only_sensitive = True
-        self.args.report_all = False
-
-    # Configuración de depuración inicial
-    pdf_value = ParameterValidator.safe_get(self.args, 'pdf', False)
-    html_value = ParameterValidator.safe_get(self.args, 'html', False)
-    Messages.print_debug(Messages.DEBUG_ARGS_SETUP, pdf_value, html_value, verbose=self.verbose)
-
-    # Verificar la solicitud de PDF y su viabilidad
-    if pdf_value:
-        try:
-            pandoc_version = subprocess.run(
-                ["pandoc", "--version"], 
-                capture_output=True, 
-                text=True, 
-                check=True
-            )
-            self.debug("Pandoc encontrado: " + pandoc_version.stdout.splitlines()[0])
-        except (subprocess.SubprocessError, FileNotFoundError):
-            Messages.print_error(Messages.ERROR_MISSING_PANDOC)
-            self.args.pdf = False
+    def __init__(self, args=None):
+        """
+        Constructor de la clase MetaInfo.
         
-        # Si se activó PDF, también activar HTML como respaldo
-        if self.args.pdf:
-            self.args.html = True
+        Args:
+            args: Argumentos de línea de comandos
+        """
+        self.args = args or {}
+        self.verbose = self.args.get('verbose', False)
+        
+        # Configuración de reportes
+        self.markdown_enabled = self.args.get('markdown', True) 
+        self.html_enabled = self.args.get('html', False)
+        self.pdf_enabled = self.args.get('pdf', False)
+        self.only_sensitive = self.args.get('report_sensitive', False)
+        
+        # Verificar si podemos generar PDFs
+        if self.pdf_enabled:
+            try:
+                import pypandoc
+                # Verificar si pandoc está instalado
+                if self.verbose:
+                    Messages.print_debug("Verificando si pandoc está instalado para generar PDF", verbose=True)
+                result = subprocess.run(['pandoc', '--version'], 
+                                       stdout=subprocess.PIPE, 
+                                       stderr=subprocess.PIPE)
+                if result.returncode != 0:
+                    Messages.print_warning(Messages.WARNING_PANDOC_NOT_FOUND)
+                    self.pdf_enabled = False
+            except ImportError:
+                Messages.print_warning(Messages.WARNING_PYPANDOC_NOT_FOUND)
+                self.pdf_enabled = False
+        
+        if self.verbose:
+            Messages.print_debug(f"Configuración de reportes - markdown: {self.markdown_enabled}, html: {self.html_enabled}, pdf: {self.pdf_enabled}, only_sensitive: {self.only_sensitive}", verbose=True)
 
-    # Crear la instancia principal y pasar todos los argumentos una sola vez
-    self.main = Main(self.args.i, self.args.o)
-    self.main.args = self.args
-    
-    # Iniciar procesamiento
-    self.process()   
-    
-  def help (self):      
-      self.parser.print_help()
+    def process(self):
+        """
+        Procesa los argumentos de la línea de comandos.
+        """
+        if self.args is None:
+            return
+        
+        args = self.args
+        
+        # Inicializar la clase Main con los argumentos
+        main = Main(self.args)
+        
+        # Path de entrada
+        input_path = args.get('input_path')
+        
+        # Mostrar versión
+        if args.get('version'):
+            main.print_version()
+            return
+        
+        # Mostrar extensiones soportadas
+        if args.get('show_supported'):
+            main.display_supported_extensions()
+            return
+        
+        # Mostrar patrones sensibles
+        if args.get('show_sensitive'):
+            main.display_sensitive_patterns()
+            return
+        
+        # Verificar existencia de la ruta de entrada
+        if not input_path:
+            Messages.print_error(Messages.ERROR_NO_INPUT_PATH)
+            return
+        
+        if not os.path.exists(input_path):
+            Messages.print_error(Messages.ERROR_INPUT_NOT_EXISTS, input_path)
+            return
+        
+        # Comando para generar reporte
+        if args.get('report'):
+            if self.verbose:
+                Messages.print_debug(f"Generando reporte con configuración: markdown={self.markdown_enabled}, html={self.html_enabled}, pdf={self.pdf_enabled}, only_sensitive={self.only_sensitive}", verbose=True)
+            
+            main.report(
+                markdown=self.markdown_enabled,
+                html=self.html_enabled,
+                pdf=self.pdf_enabled,
+                only_sensitive=self.only_sensitive
+            )
+            return
+        
+        # Comando para limpiar metadatos
+        if args.get('wipe'):
+            main.wipe()
+            return
+        
+        # Comando para limpiar solo metadatos sensibles
+        if args.get('wipe_sensitive'):
+            main.wipe_sensitive()
+            return
+        
+        # Si no se especificó ningún comando, imprimir ayuda
+        Messages.print_warning(Messages.WARNING_NO_ACTION)
 
-  def debug (self, s, e=False):
-      if self.verbose:
-        if e:
-            Messages.print_error(s)
-            self.help()
-            sys.exit(1) 
-        else:
-            Messages.print_info(s)
-
-  def process (self):
-      # Verificar que self.args existe
-      if not ParameterValidator.safe_get(self, 'args', None):
-          Messages.print_error(Messages.ERROR_NO_ARGS)
-          return
-          
-      # Procesar comandos utilitarios que finalizan la ejecución
-      if self.args.show_patterns:
-         self.main.show_sensitive_patterns()
-         sys.exit(0)
-      elif self.args.show_mimes:
-         self.main.show_supported_extensions()
-         sys.exit(0)
-      
-      # Procesar comandos de limpieza
-      if self.args.wipe_all:
-          self.main.wipe()
-      elif self.args.wipe_sensitive:
-          self.main.wipe()
-      # Por defecto, generar informe
-      else:
-          # Depuración final antes de generar el informe
-          Messages.print_debug(f"DEBUG-metainfo - PDF activado: {self.args.pdf}", verbose=self.verbose)
-          Messages.print_debug(f"DEBUG-metainfo - HTML activado: {self.args.html}", verbose=self.verbose)
-          Messages.print_debug(f"DEBUG-metainfo - Solo datos sensibles: {self.args.only_sensitive}", verbose=self.verbose)
-          
-          # Generar informe
-          md_path, pdf_path = self.main.report()
-          
-          # Informar sobre el resultado
-          if md_path is None:
-              Messages.print_error(Messages.ERROR_REPORT_GENERATION)
-          elif self.args.pdf and pdf_path is None:
-              html_path = f"{os.path.splitext(md_path)[0]}.html"
-              if os.path.exists(html_path):
-                  Messages.print_error(Messages.ERROR_PDF_GENERATION, md_path, html_path)
-              else:
-                  Messages.print_error(Messages.ERROR_PDF_GENERATION, md_path, "No disponible")
-  
-           
 def main(): 
-    mn = MetaInfo()
+    try:
+        # Configurar el analizador de argumentos
+        parser = argparse.ArgumentParser(description="MetaInfo - Herramienta para gestión de metadatos")
+        parser.add_argument("--input_path", "--i", nargs='?', help="Ruta de la carpeta a inspeccionar")
+        parser.add_argument("--output_path", "--o", nargs='?', default="./", help="Ruta de la carpeta de salida (opcional, por defecto: carpeta actual)")
+        parser.add_argument("--wipe", "--wipe_all", action="store_true", default=False, help="Eliminar todos los metadatos (predeterminado: False)")
+        parser.add_argument("--wipe_sensitive", action="store_true", default=False, help="Eliminar solo metadatos sensibles (predeterminado: False)")
+        parser.add_argument("--report", "--report_all", action="store_true", default=True, help="Generar informe de todos los metadatos (predeterminado: True)")
+        parser.add_argument("--report_sensitive", action="store_true", default=False, help="Generar informe solo de metadatos sensibles (predeterminado: False)")
+        parser.add_argument("--verbose", action="store_true", default=False, help="Mostrar información detallada (predeterminado: False)")
+        parser.add_argument("--markdown", "--md", action="store_true", default=True, help="Generar informe en formato Markdown (predeterminado: True)")
+        parser.add_argument("--html", action="store_true", default=False, help="Generar informe en formato HTML (predeterminado: False)")
+        parser.add_argument("--pdf", action="store_true", default=False, help="Generar informe en formato PDF (predeterminado: False)")
+        parser.add_argument("--show_supported", "--show_mimes", action="store_true", default=False, help="Mostrar extensiones soportadas y salir (predeterminado: False)")
+        parser.add_argument("--show_sensitive", "--show_patterns", action="store_true", default=False, help="Mostrar patrones considerados sensibles y salir (predeterminado: False)")
+        parser.add_argument("--version", action="version", version="%(prog)s "+VERSION, help="Mostrar versión del programa")
+        
+        # Nota sobre formatos de salida
+        parser.epilog = Messages.INFO_REPORT_FORMATS
+        
+        args = parser.parse_args()
+        
+        # Convertir los argumentos a un diccionario
+        args_dict = vars(args)
+        
+        # Inicializar y procesar
+        metainfo = MetaInfo(args_dict)
+        metainfo.process()
+        
+    except Exception as e:
+        Messages.print_error(f"Error inesperado: {str(e)}")
+        if os.environ.get('DEBUG') == '1':
+            traceback.print_exc()
+        return 1
     
+    return 0
+
 if __name__ == "__main__":
-    main() 
+    sys.exit(main()) 
 

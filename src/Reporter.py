@@ -18,6 +18,7 @@ except ImportError:
 
 from src.Messages import Messages
 from src.ParameterValidator import ParameterValidator
+from src.resources.templates import Templates
 
 class Reporter:
     """
@@ -170,83 +171,7 @@ class Reporter:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Informe de Metadatos</title>
-    <style>
-        body {{ 
-            font-family: Arial, sans-serif; 
-            line-height: 1.6; 
-            margin: 0; 
-            padding: 20px;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-        }}
-        h1, h2, h3 {{ color: #2c3e50; }}
-        h1 {{ 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 10px; 
-            margin-top: 30px;
-        }}
-        h2 {{ 
-            border-bottom: 1px solid #bdc3c7; 
-            padding-bottom: 5px; 
-            margin-top: 25px; 
-        }}
-        h3 {{
-            margin-top: 20px;
-            background-color: #f8f9fa;
-            padding: 8px;
-            border-radius: 4px;
-        }}
-        table {{ 
-            border-collapse: collapse; 
-            width: 100%; 
-            margin: 20px 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-        th, td {{ 
-            text-align: left; 
-            padding: 12px; 
-            border: 1px solid #ddd; 
-        }}
-        th {{ 
-            background-color: #f2f2f2; 
-            color: #333;
-            position: sticky;
-            top: 0;
-        }}
-        tr:nth-child(even) {{ background-color: #f9f9f9; }}
-        tr:hover {{ background-color: #f1f1f1; }}
-        code, .file-path {{ 
-            font-family: Consolas, monospace; 
-            background-color: #f8f8f8; 
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 0.9em;
-        }}
-        .sensitive {{ 
-            color: #e74c3c; 
-            font-weight: bold; 
-        }}
-        .metadata-key {{ 
-            font-weight: bold; 
-            color: #2980b9; 
-        }}
-        pre {{ 
-            background-color: #f8f8f8; 
-            padding: 15px; 
-            border-radius: 5px; 
-            overflow-x: auto;
-            border: 1px solid #ddd;
-        }}
-        footer {{
-            margin-top: 50px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            text-align: center;
-            font-size: 0.9em;
-            color: #777;
-        }}
-    </style>
+    {Templates.get_html_style()}
 </head>
 <body>
     {html_content}
@@ -298,137 +223,43 @@ class Reporter:
         pdf_path = os.path.join(report_dir, f"{base_name}.pdf")
         
         try:
-            # Opciones para la conversión con soporte para portada y formato mejorado
-            extra_args = [
-                '--pdf-engine=xelatex',
-                '--variable=geometry:margin=2cm',
+            # Obtener argumentos básicos de pandoc desde Templates
+            extra_args = Templates.get_basic_pandoc_args()
+            
+            # Añadir opciones adicionales para una mejor apariencia
+            extra_args.extend([
                 '--variable=colorlinks=true',
                 '--variable=fontsize=11pt',
                 '--variable=mainfont=DejaVu Sans',
                 '--variable=monofont=DejaVu Sans Mono',
-                '--toc',
-                '--toc-depth=3',
-                '-V', 'lang=es',
                 '--template=eisvogel',  # Intentar usar la plantilla Eisvogel si está disponible
                 '--wrap=preserve'
-            ]
+            ])
             
-            # Crear un archivo temporal de recursos para la portada
+            # Crear un archivo temporal con el encabezado LaTeX
             with tempfile.NamedTemporaryFile(suffix='.tex', delete=False, mode='w', encoding='utf-8') as temp_header:
-                # Personalización para la plantilla de portada si no está Eisvogel
-                header_content = r"""
-\usepackage{titling}
-\usepackage{titlesec}
-\usepackage{fancyhdr}
-\usepackage{xcolor}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{array}
-\usepackage{colortbl}
-\usepackage{hyperref}
-
-% Personalización de cabecera y pie de página
-\pagestyle{fancy}
-\fancyhf{}
-\fancyhead[L]{MetaInfo Tool}
-\fancyhead[R]{\thepage}
-\fancyfoot[C]{Informe de Metadatos}
-
-% Formato de tabla mejorado
-\renewcommand{\arraystretch}{1.3}
-\definecolor{table-row-color}{RGB}{242, 242, 242}
-\definecolor{table-header-color}{RGB}{44, 62, 80}
-
-% Comando para portada personalizada si no se usa Eisvogel
-\AtBeginDocument{
-  \ifdefined\eisvogeltitlepage
-  \else
-    \begin{titlepage}
-      \centering
-      \vspace*{3cm}
-      \includegraphics[width=0.3\textwidth]{example-image}
-      \vspace{1cm}
-      
-      \textcolor{teal}{\rule{\linewidth}{0.5mm}}
-      \vspace{0.5cm}
-      
-      {\Huge\bfseries\thetitle\par}
-      \vspace{0.5cm}
-      
-      {\Large\theauthor\par}
-      \vspace{0.5cm}
-      
-      {\large\thedate\par}
-      \vspace{0.5cm}
-      
-      \textcolor{teal}{\rule{\linewidth}{0.5mm}}
-      \vfill
-      
-      {\large Generado automáticamente\par}
-      \vspace{1cm}
-    \end{titlepage}
-    \newpage
-    \tableofcontents
-    \newpage
-  \fi
-}
-
-% Personalización del formato de tablas
-\let\oldlongtable\longtable
-\let\endoldlongtable\endlongtable
-\renewenvironment{longtable}{\rowcolors{2}{white}{table-row-color}\oldlongtable}{\endoldlongtable}
-
-\let\oldtoprule\toprule
-\renewcommand{\toprule}{
-  \arrayrulecolor{table-header-color}
-  \oldtoprule
-  \arrayrulecolor{black}
-}
-
-"""
-                temp_header.write(header_content)
+                temp_header.write(Templates.get_latex_header())
                 header_file = temp_header.name
                 
-            # Añadir el archivo de recursos a los argumentos
+            # Añadir el archivo de encabezado a los argumentos
             extra_args.extend(['--include-in-header', header_file])
             
-            # Crear un archivo temporal con estilos para tablas mejorados
+            # Crear un archivo temporal con el contenido Markdown y estilos adicionales
             with open(md_path, 'r', encoding='utf-8') as f:
                 md_content = f.read()
                 
             with tempfile.NamedTemporaryFile(suffix='.md', delete=False, mode='w', encoding='utf-8') as temp_md:
-                # Añadir CSS personalizado para HTML
-                table_style = """
-<style>
-table {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 20px 0;
-}
-th, td {
-    text-align: left;
-    padding: 8px;
-    border: 1px solid #ddd;
-}
-th {
-    background-color: #2c3e50;
-    color: white;
-    font-weight: bold;
-}
-tr:nth-child(even) {
-    background-color: #f2f2f2;
-}
-</style>
-
-"""
+                # Añadir CSS para HTML (pandoc lo ignorará para PDF)
+                table_style = Templates.get_html_style()
+                
                 # Escribir el contenido con los estilos añadidos
                 temp_md.write(table_style + md_content)
                 temp_md_path = temp_md.name
             
+            # Mensajes de depuración
             Messages.print_debug(Messages.DEBUG_CONVERSION_STARTED, verbose=verbose)
-            Messages.print_debug(Messages.DEBUG_USING_SIMPLIFIED_OPTIONS, verbose=verbose)
-            Messages.print_debug(f"Archivo Markdown temporal con estilos: {temp_md_path}", verbose=verbose)
-            Messages.print_debug(f"Archivo PDF de destino: {pdf_path}", verbose=verbose)
+            Messages.print_debug(f"Archivo Markdown temporal: {temp_md_path}", verbose=verbose)
+            Messages.print_debug(f"Archivo PDF destino: {pdf_path}", verbose=verbose)
             
             # Verificar si la plantilla Eisvogel está disponible
             eisvogel_available = False
@@ -453,7 +284,7 @@ tr:nth-child(even) {
                 if '--template=eisvogel' in extra_args:
                     extra_args.remove('--template=eisvogel')
             
-            # Verificar si pandoc está disponible
+            # Mostrar versiones instaladas para depuración
             Messages.print_info("Versiones instaladas:")
             try:
                 Messages.print_info(f"pypandoc: {pypandoc.__version__}")
@@ -461,17 +292,18 @@ tr:nth-child(even) {
             except Exception as ver_err:
                 Messages.print_error(f"Error al verificar versiones: {str(ver_err)}")
 
-            # Método 1: Conversión directa de archivo a PDF usando el archivo temporal
+            # ---- ESTRATEGIA 1: Conversión directa ----
             success = False
             try:
+                Messages.print_info("Intentando conversión directa a PDF...")
                 output = pypandoc.convert_file(temp_md_path, 'pdf', outputfile=pdf_path, extra_args=extra_args)
-                Messages.print_info("Conversión directa completada.")
+                Messages.print_info("Conversión directa completada con éxito.")
                 success = True
             except Exception as simple_err:
                 error_msg = str(simple_err)
                 Messages.print_error(f"Error en conversión directa: {error_msg}")
                 
-                # Verificar si es un error relacionado con fuentes o la plantilla
+                # Analizar errores comunes y ajustar la estrategia
                 if "fontspec" in error_msg or "font" in error_msg.lower() or "cannot be found" in error_msg:
                     Messages.print_error(Messages.ERROR_FONT_NOT_FOUND)
                 elif "template" in error_msg.lower() or "eisvogel" in error_msg.lower():
@@ -479,18 +311,16 @@ tr:nth-child(even) {
                     # Remover la opción de plantilla si causa problemas
                     if '--template=eisvogel' in extra_args:
                         extra_args.remove('--template=eisvogel')
+                elif "Undefined control sequence" in error_msg and "rowcolors" in error_msg:
+                    Messages.print_error("Error con el comando rowcolors. Usando opciones más básicas...")
+                    # Si hay error con rowcolors, usar sólo opciones básicas
+                    extra_args = Templates.get_basic_pandoc_args()
                 
-                # Método 2: Conversión con opciones simplificadas
+                # ---- ESTRATEGIA 2: Conversión simplificada ----
                 if not success:
                     Messages.print_info(Messages.INFO_TRYING_ALTERNATIVE)
                     try:
-                        # Opciones básicas pero efectivas
-                        simple_args = [
-                            '--pdf-engine=xelatex',
-                            '--variable=geometry:margin=2cm',
-                            '--toc',
-                            '--include-in-header', header_file
-                        ]
+                        simple_args = Templates.get_basic_pandoc_args()
                         output = pypandoc.convert_file(temp_md_path, 'pdf', outputfile=pdf_path, extra_args=simple_args)
                         Messages.print_info(Messages.INFO_SUCCESSFUL_CONVERSION)
                         success = True
@@ -498,89 +328,61 @@ tr:nth-child(even) {
                         error_msg = str(alt_err)
                         Messages.print_error(f"Error en conversión alternativa: {error_msg}")
                 
-                # Método 3: Conversión en dos pasos (markdown → latex → pdf) con argumentos muy básicos
+                # ---- ESTRATEGIA 3: Conversión en dos pasos (Markdown → LaTeX → PDF) ----
                 if not success:
-                    Messages.print_info(Messages.INFO_TRYING_ALTERNATIVE)
+                    Messages.print_info("Intentando conversión en dos pasos (Markdown → LaTeX → PDF)...")
                     try:
                         latex_path = os.path.join(report_dir, f"{base_name}.tex")
                         
-                        # Opciones mínimas para LaTeX
-                        minimal_args = [
-                            '--standalone',
-                            '--variable=geometry:margin=2cm'
-                        ]
-                        
-                        # Paso 1: Markdown a LaTeX con opciones mínimas
+                        # Convertir de Markdown a LaTeX con opciones mínimas
+                        minimal_args = ['--standalone', '--variable=geometry:margin=2cm']
                         latex_content = pypandoc.convert_file(temp_md_path, 'latex', extra_args=minimal_args)
                         
-                        # Añadir ajustes para tablas en LaTeX
-                        table_latex_style = r"""
-\usepackage{booktabs}
-\usepackage{array}
-\usepackage{longtable}
-\usepackage{colortbl}
-\usepackage{xcolor}
-\definecolor{table-header-color}{RGB}{44, 62, 80}
-\definecolor{table-row-color}{RGB}{242, 242, 242}
-
-\renewcommand{\arraystretch}{1.3}
-
-% Aplicar color a las filas alternas
-\let\oldlongtable\longtable
-\let\endoldlongtable\endlongtable
-\renewenvironment{longtable}{\rowcolors{2}{white}{table-row-color}\oldlongtable}{\endoldlongtable}
-
-% Aplicar estilo a las cabeceras
-\let\oldhead\head
-\renewcommand{\head}[1]{\rowcolor{table-header-color}\color{white}\bfseries #1}
-"""
-                        # Insertar después del preámbulo
+                        # Añadir los estilos de LaTeX para tablas
                         if "\\begin{document}" in latex_content:
-                            latex_content = latex_content.replace("\\begin{document}", 
-                                                               table_latex_style + "\\begin{document}")
+                            latex_content = latex_content.replace(
+                                "\\begin{document}", 
+                                Templates.get_latex_table_style() + "\\begin{document}"
+                            )
                         
+                        # Guardar el contenido LaTeX a un archivo
                         with open(latex_path, 'w', encoding='utf-8') as f:
                             f.write(latex_content)
-                        Messages.print_debug(f"Archivo LaTeX intermedio generado: {latex_path}", verbose=verbose)
+                        Messages.print_debug(f"Archivo LaTeX generado: {latex_path}", verbose=verbose)
                         
-                        # Paso 2: LaTeX a PDF usando subprocess
+                        # ---- PASO 2A: Compilar LaTeX a PDF con pdflatex ----
                         try:
-                            Messages.print_info("Ejecutando pdflatex con configuración básica...")
+                            Messages.print_info("Compilando LaTeX con pdflatex...")
                             result = subprocess.run(
                                 ['pdflatex', '-output-directory', report_dir, latex_path],
-                                capture_output=True,
-                                text=True,
-                                check=False
+                                capture_output=True, text=True, check=False
                             )
-                            # Segunda ejecución para índice
+                            
+                            # Segunda pasada para índice y referencias si es exitoso
                             if result.returncode == 0:
                                 subprocess.run(
                                     ['pdflatex', '-output-directory', report_dir, latex_path],
-                                    capture_output=True,
-                                    text=True,
-                                    check=False
+                                    capture_output=True, text=True, check=False
                                 )
                                 success = True
                                 Messages.print_info(Messages.INFO_SUCCESSFUL_CONVERSION)
                             else:
+                                # Si pdflatex falla, mostrar el error
                                 error_output = result.stderr if result.stderr else result.stdout
-                                Messages.print_error(f"Error al ejecutar pdflatex: {error_output}")
+                                Messages.print_error(f"Error al compilar con pdflatex: {error_output}")
                                 
-                                # Si falla pdflatex, intentar con xelatex como último recurso
-                                Messages.print_info("Intentando con xelatex como alternativa final...")
+                                # ---- PASO 2B: Intentar con xelatex como último recurso ----
+                                Messages.print_info("Intentando compilar con xelatex...")
                                 result = subprocess.run(
                                     ['xelatex', '-output-directory', report_dir, latex_path],
-                                    capture_output=True,
-                                    text=True,
-                                    check=False
+                                    capture_output=True, text=True, check=False
                                 )
+                                
                                 if result.returncode == 0:
-                                    # Segunda ejecución para índice
+                                    # Segunda pasada para índice y referencias
                                     subprocess.run(
                                         ['xelatex', '-output-directory', report_dir, latex_path],
-                                        capture_output=True,
-                                        text=True,
-                                        check=False
+                                        capture_output=True, text=True, check=False
                                     )
                                     success = True
                                     Messages.print_info(Messages.INFO_SUCCESSFUL_CONVERSION)
@@ -588,10 +390,11 @@ tr:nth-child(even) {
                                     error_output = result.stderr if result.stderr else result.stdout
                                     Messages.print_error(f"Error también con xelatex: {error_output}")
                                     Messages.print_error(Messages.ERROR_PDF_CONVERSION_FAILED)
+                                    Messages.print_info(Messages.LATEX_RECOMMENDATIONS)
                         except Exception as latex_err:
-                            Messages.print_error(f"Error en conversión LaTeX a PDF: {str(latex_err)}")
+                            Messages.print_error(f"Error en compilación LaTeX: {str(latex_err)}")
                     except Exception as twostep_err:
-                        Messages.print_error(f"Error en conversión de dos pasos: {str(twostep_err)}")
+                        Messages.print_error(f"Error en proceso de dos pasos: {str(twostep_err)}")
                         Messages.print_error(Messages.ERROR_PDF_CONVERSION_FAILED)
             
             # Limpiar archivos temporales
@@ -599,28 +402,26 @@ tr:nth-child(even) {
                 for temp_file in [temp_md_path, header_file]:
                     if os.path.exists(temp_file):
                         os.unlink(temp_file)
-            except Exception:
-                pass
+                # No eliminar el archivo .tex que puede ser útil para depuración
+            except Exception as e:
+                Messages.print_debug(f"Error al limpiar archivos temporales: {str(e)}", verbose=verbose)
                     
-            # Verificar resultado
+            # Verificar resultado final
             if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0:
                 Messages.print_info(Messages.INFO_PDF_GENERATED, pdf_path)
                 Messages.print_debug(f"Tamaño del archivo: {os.path.getsize(pdf_path)} bytes", verbose=verbose)
                 return pdf_path
             else:
-                Messages.print_error(f"Error: No se pudo generar el archivo PDF o el archivo está vacío.")
-                Messages.print_debug(f"Comprobando directorio de destino: {os.path.exists(os.path.dirname(pdf_path))}", verbose=verbose)
+                Messages.print_error("Error: No se pudo generar el archivo PDF o el archivo está vacío.")
                 return None
                 
         except Exception as e:
-            Messages.print_error(f"Error al generar PDF: {str(e)}")
-            Messages.print_debug(f"Tipo de error: {type(e).__name__}", verbose=verbose)
+            Messages.print_error(f"Error general al generar PDF: {str(e)}")
             
             if hasattr(e, 'output'):
                 Messages.print_error(f"Salida del error: {e.output}")
                 
             Messages.print_info(Messages.LATEX_RECOMMENDATIONS)
-            
             return None
             
     def _generate_markdown_content(self, src_path, metadata_info):

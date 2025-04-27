@@ -165,6 +165,9 @@ class Main:
         only_sensitive = ParameterValidator.safe_get(self.args, 'only_sensitive', False)
         verbose = ParameterValidator.safe_get(self.args, 'verbose', False)
         
+        if only_sensitive and verbose:
+            Messages.print_debug("Procesando directorio con filtro de solo datos sensibles", verbose=True)
+        
         for item in os.listdir(directory):
             item_path = os.path.join(directory, item)
             
@@ -195,6 +198,7 @@ class Main:
                     
                     has_metadata = False
                     has_sensitive_data = False
+                    sensitive_metadata_count = 0
                     
                     for data in metadata:
                         if hasattr(data, 'items') and callable(data.items):
@@ -205,6 +209,11 @@ class Main:
                                 # Verificar si es sensible
                                 is_sensitive, matching_patterns = self._check_sensitive_data(key, val)
                                 
+                                if is_sensitive:
+                                    has_sensitive_data = True
+                                    file_info['has_sensitive'] = True
+                                    sensitive_metadata_count += 1
+                                
                                 # Si solo queremos datos sensibles, solo añadir los que son sensibles
                                 if not only_sensitive or is_sensitive:
                                     metadata_entry = {
@@ -214,10 +223,6 @@ class Main:
                                         'matching_patterns': matching_patterns
                                     }
                                     file_info['metadata'].append(metadata_entry)
-                                
-                                if is_sensitive:
-                                    has_sensitive_data = True
-                                    file_info['has_sensitive'] = True
                     
                     # Solo incluir archivos con metadatos
                     if has_metadata:
@@ -227,13 +232,12 @@ class Main:
                         if has_sensitive_data:
                             metadata_info['files_with_sensitive'] += 1
                             metadata_info['extensions_stats'][ext]['with_sensitive'] += 1
+                            
+                            if only_sensitive and verbose:
+                                Messages.print_debug(f"Archivo {item_path} contiene {sensitive_metadata_count} metadatos sensibles", verbose=True)
                         
                         # Si solo queremos datos sensibles, solo incluir archivos que tengan datos sensibles
                         if not only_sensitive or has_sensitive_data:
-                            if only_sensitive:
-                                # Si solo queremos datos sensibles, filtrar los metadatos para incluir solo los sensibles
-                                file_info['metadata'] = [entry for entry in file_info['metadata'] if entry['is_sensitive']]
-                                
                             metadata_info['files_info'].append(file_info)
             
             elif os.path.isdir(item_path):

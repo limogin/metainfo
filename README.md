@@ -340,4 +340,17 @@ Este proyecto está licenciado bajo [AGPL-3.0](LICENSE)
 
 ## Contribuciones
 
-Las contribuciones son bienvenidas. Por favor, envía un pull request o abre un issue para discutir los cambios propuestos. 
+Las contribuciones son bienvenidas. Por favor, envía un pull request o abre un issue para discutir los cambios propuestos.
+
+## Documentación
+
+La documentación técnica completa está disponible en el directorio [docs/](docs/), incluyendo:
+
+* [Índice de Documentación Técnica](docs/indice_tecnico.md)
+* [Casos de Uso](docs/casos_uso.md)
+* [Diagramas de Interacción](docs/diagramas_interaccion.md)
+* [Modelo de Dominio](docs/modelo_dominio.md)
+* [Diagrama de Clases](docs/diagrama_clases.md)
+* [Arquitectura por Capas](docs/arquitectura_capas.md)
+* [Arquitectura Modular](docs/arquitectura_modular.md)
+* [Diagrama de Flujo de Datos](docs/diagrama_flujo_datos.md) 
