@@ -2,6 +2,12 @@
 
 Este documento describe los principales casos de uso de la aplicación MetaInfo, mostrando cómo los diferentes tipos de usuarios interactúan con el sistema para lograr sus objetivos.
 
+## Navegación de la Documentación
+
+- [← Volver al Índice](indice.md)
+- [Ver Diagrama de Componentes](diagrama_componentes.md)
+- [Ver Diagrama de Clases](diagrama_clases.md)
+
 ## Diagrama de Casos de Uso
 
 ```mermaid
@@ -144,15 +150,19 @@ python metainfo.py --i ~/Documentos/Confidencial --report_sensitive --o ~/Inform
 
 **Flujo principal:**
 1. El sistema identifica todos los archivos con extensiones soportadas
-2. Para cada archivo, el sistema elimina todos los metadatos
-3. El sistema notifica el progreso y resultado de la operación
+2. El sistema omite archivos de texto (.txt) que no tienen metadatos relevantes
+3. Para cada archivo válido, el sistema elimina todos los metadatos utilizando estrategias apropiadas
+4. El sistema verifica que la limpieza se haya realizado correctamente
+5. El sistema notifica el progreso y resultado de la operación
 
 **Flujos alternativos:**
 - Si algún archivo está protegido contra escritura, el sistema lo notifica y continúa con los demás
 - Si ExifTool no está disponible, el sistema muestra un error y detiene el proceso
+- Si un método de limpieza falla, el sistema intenta métodos alternativos
 
 **Postcondiciones:**
 - Los archivos procesados ya no contienen metadatos
+- Se mantiene un registro de cualquier error ocurrido durante el proceso
 
 **Ejemplo:**
 ```bash
@@ -171,17 +181,21 @@ python metainfo.py --i ~/Documentos/ParaPublicar --wipe_all --verbose
 
 **Flujo principal:**
 1. El sistema identifica todos los archivos con extensiones soportadas
-2. Para cada archivo, el sistema extrae los metadatos
-3. El sistema identifica qué campos contienen información sensible
-4. El sistema elimina solo los campos sensibles, preservando el resto
-5. El sistema notifica el progreso y resultado de la operación
+2. El sistema omite archivos de texto (.txt) que no tienen metadatos relevantes
+3. Para cada archivo válido, el sistema extrae los metadatos
+4. El sistema identifica qué campos contienen información sensible
+5. El sistema elimina solo los campos sensibles mediante técnicas apropiadas
+6. El sistema verifica que se hayan eliminado correctamente los campos sensibles
+7. El sistema notifica el progreso y resultado de la operación
 
 **Flujos alternativos:**
 - Si no se encuentran datos sensibles en un archivo, el sistema lo notifica y continúa
 - Si ExifTool no está disponible, el sistema muestra un error y detiene el proceso
+- Si un método de limpieza falla, el sistema intenta métodos alternativos
 
 **Postcondiciones:**
 - Los archivos procesados no contienen metadatos sensibles, pero conservan el resto de la información
+- Se mantiene un registro de cualquier error ocurrido durante el proceso
 
 **Ejemplo:**
 ```bash
@@ -296,4 +310,18 @@ python metainfo.py --i /coleccion/documentos_historicos --report_sensitive --o /
 
 # Paso 4: Eliminar selectivamente los datos sensibles
 python metainfo.py --i /coleccion/documentos_historicos --wipe_sensitive --verbose
-``` 
+```
+
+## Relación con los Componentes del Sistema
+
+Los casos de uso aquí descritos se implementan mediante los componentes detallados en el [Diagrama de Componentes](diagrama_componentes.md):
+
+- **UC1** utiliza principalmente el **Analizador de Metadatos** y el **Detector de Datos Sensibles**
+- **UC2** y **UC3** utilizan el **Sistema de Informes** y sus generadores específicos
+- **UC4** y **UC5** utilizan el **Sistema de Limpieza** con sus estrategias específicas
+- **UC6** utiliza la **Base de Patrones Sensibles**
+- **UC7** utiliza la **Base de Extensiones Soportadas**
+
+---
+
+*Última actualización: 11/06/2024* 

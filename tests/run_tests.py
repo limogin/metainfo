@@ -1,10 +1,23 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""
+Script para ejecutar todas las pruebas del proyecto.
 
-import unittest
+Este script verifica primero las dependencias necesarias, luego corre las pruebas unitarias
+y de integración, y finalmente genera un informe de cobertura de código.
+"""
+
 import os
 import sys
+import unittest
 import subprocess
+
+# Intentar importar termcolor, pero si no está disponible, crear una versión alternativa
+try:
+    from termcolor import colored
+except ImportError:
+    # Definir una función alternativa que simplemente devuelve el texto sin colorear
+    def colored(text, color=None, on_color=None, attrs=None):
+        return text
 
 # Verificar que estamos usando Python 3
 if sys.version_info[0] < 3:
@@ -16,60 +29,82 @@ if sys.version_info[0] < 3:
     sys.exit(1)
 
 # Añadir la ruta raíz del proyecto al path para poder importar los módulos
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, parent_dir)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-def check_dependencies():
-    """
-    Verifica que todas las dependencias necesarias estén instaladas.
-    """
-    check_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'check_dependencies.py')
-    if os.path.exists(check_script):
-        try:
-            subprocess.check_call([sys.executable, check_script])
-            return True
-        except subprocess.CalledProcessError:
-            print("Error al verificar dependencias. Algunas pruebas podrían fallar.")
-            return False
-    return True
+# Importar el verificador de dependencias
+from tests.check_dependencies import check_dependencies
 
-def run_tests():
-    """
-    Ejecuta todas las pruebas en el directorio tests/
-    """
-    # Descubrir y cargar todas las pruebas
+def run_unit_tests():
+    """Ejecuta las pruebas unitarias y muestra los resultados."""
+    print(colored("\n=== Ejecutando Pruebas Unitarias ===", "blue", attrs=["bold"]))
+    
+    # Descubrir y ejecutar todas las pruebas
     loader = unittest.TestLoader()
-    tests_dir = os.path.abspath(os.path.dirname(__file__))
-    suite = loader.discover(tests_dir, pattern="test_*.py")
+    suite = loader.discover(os.path.dirname(os.path.abspath(__file__)), pattern="test_*.py")
     
-    # Ejecutar las pruebas
     runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(suite)
+    results = runner.run(suite)
     
-    # Devolver un código de salida basado en el resultado
-    return 0 if result.wasSuccessful() else 1
+    # Mostrar resumen de resultados
+    print("\nResumen de pruebas unitarias:")
+    print(f"  Pruebas ejecutadas: {results.testsRun}")
+    print(f"  Pruebas exitosas: {results.testsRun - len(results.failures) - len(results.errors)}")
+    print(f"  Pruebas fallidas: {len(results.failures)}")
+    print(f"  Pruebas con errores: {len(results.errors)}")
+    
+    return results.wasSuccessful()
+
+def run_coverage():
+    """Ejecuta el análisis de cobertura de código."""
+    try:
+        import coverage
+        print(colored("\n=== Ejecutando Análisis de Cobertura ===", "blue", attrs=["bold"]))
+
+        # Configurar y iniciar la medición de cobertura
+        cov = coverage.Coverage(source=['src'], omit=['*/__pycache__/*', '*/tests/*'])
+        cov.start()
+        
+        # Ejecutar las pruebas
+        loader = unittest.TestLoader()
+        suite = loader.discover(os.path.dirname(os.path.abspath(__file__)), pattern="test_*.py")
+        runner = unittest.TextTestRunner(verbosity=0)
+        runner.run(suite)
+        
+        # Detener la medición y generar informe
+        cov.stop()
+        cov.save()
+        cov.report()
+        cov.html_report(directory='coverage_report')
+        
+        print(f"\nInforme HTML de cobertura generado en: {os.path.abspath('coverage_report')}")
+        return True
+    except ImportError:
+        print(colored("\nATENCIÓN: No se pudo ejecutar el análisis de cobertura porque el módulo 'coverage' no está instalado.", "yellow"))
+        print("Para instalarlo, ejecute: 'pip install coverage'")
+        return False
+    except Exception as e:
+        print(colored(f"\nError al ejecutar análisis de cobertura: {str(e)}", "red"))
+        return False
+
+def main():
+    # Verificar dependencias necesarias
+    dependencies_ok = check_dependencies()
+    if not dependencies_ok:
+        sys.exit(1)
+    
+    # Ejecutar las pruebas unitarias
+    unittest_success = run_unit_tests()
+    
+    # Ejecutar análisis de cobertura
+    coverage_success = run_coverage()
+    
+    # Determinar el estado de salida
+    if not unittest_success:
+        print(colored("\n⚠️  Algunas pruebas han fallado.", "red", attrs=["bold"]))
+        sys.exit(1)
+    else:
+        print(colored("\n✅ Todas las pruebas han pasado correctamente.", "green", attrs=["bold"]))
+        sys.exit(0)
 
 if __name__ == "__main__":
-    # Verificar dependencias primero
-    if not check_dependencies():
-        print("ADVERTENCIA: Algunas dependencias no están disponibles.")
-        if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 6):
-            print("ADVERTENCIA: Se está ejecutando Python {}.{}, se recomienda Python 3.6+".format(
-                sys.version_info[0], sys.version_info[1]))
-    
-    # Preparar archivos de prueba si es necesario
-    test_files_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_files', 'sample.py')
-    if os.path.exists(test_files_script):
-        print("Generando archivos de prueba...")
-        try:
-            exec(open(test_files_script).read())
-        except Exception as e:
-            print("Error al generar archivos de prueba: {}".format(str(e)))
-            print("Algunas pruebas podrían fallar debido a la falta de archivos de prueba.")
-    
-    # Ejecutar pruebas
-    print("\n===== Ejecutando pruebas =====\n")
-    exit_code = run_tests()
-    
-    # Salir con el código apropiado
-    sys.exit(exit_code) 
+    main() 

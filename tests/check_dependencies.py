@@ -73,9 +73,12 @@ def install_dependency(package_name):
         print("Error al instalar {}".format(package_name))
         return False
 
-def main():
+def check_dependencies():
     """
-    Función principal que verifica todas las dependencias.
+    Función que verifica todas las dependencias necesarias.
+    
+    Returns:
+        bool: True si todas las dependencias están instaladas, False en caso contrario
     """
     print("Verificando dependencias para las pruebas...")
     
@@ -98,10 +101,17 @@ def main():
     
     if all_installed:
         print("\n✓ Todas las dependencias están instaladas.")
-        return 0
+        return True
     else:
         print("\n✗ Algunas dependencias no están instaladas.")
-        return 1
+        return False
+
+def main():
+    """
+    Función principal que verifica todas las dependencias.
+    """
+    result = check_dependencies()
+    return 0 if result else 1
 
 if __name__ == "__main__":
     sys.exit(main()) 

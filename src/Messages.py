@@ -5,6 +5,8 @@ Facilita el mantenimiento y la consistencia de la interfaz.
 
 class Messages:
 
+    ERROR_NO_INPUT_PATH = "Error: No se ha especificado la ruta de entrada. Use --i ruta_archivo"
+
     WARNING_NO_ACTION = "ADVERTENCIA: No se ha especificado ninguna acción. Use --report, --wipe o --version"
     # Mensajes de error generales
     ERROR_NO_INPUT_FOLDER = "Error: No se ha especificado la carpeta de entrada. Use --i ruta_carpeta"

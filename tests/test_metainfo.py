@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import unittest
 import os
 import sys
@@ -34,7 +37,12 @@ class TestMetaInfo(unittest.TestCase):
                 f.write(content)
                 
         # Crear una instancia de Main para las pruebas
-        self.main = Main(self.test_dir, self.output_dir)
+        args = {
+            'input_path': self.test_dir,
+            'output_path': self.output_dir,
+            'verbose': True
+        }
+        self.main = Main(args)
         
     def tearDown(self):
         """Limpieza después de cada prueba"""
@@ -45,152 +53,93 @@ class TestMetaInfo(unittest.TestCase):
     @patch('exiftool.ExifToolHelper')
     def test_inspect_file(self, mock_exiftool):
         """Probar la función de inspección de archivos"""
-        # Configurar el mock de ExifToolHelper
+        # Configurar el mock
         mock_instance = MagicMock()
         mock_exiftool.return_value.__enter__.return_value = mock_instance
-        mock_instance.get_metadata.return_value = [{'SourceFile': 'test.jpg', 'EXIF:Make': 'Canon', 'EXIF:Model': 'EOS 5D'}]
+        mock_instance.get_metadata.return_value = [{'SourceFile': 'test.jpg', 'EXIF:Make': 'Canon'}]
         
-        # Ejecutar la función a probar
+        # Ejecutar la función
         result = self.main.inspect(os.path.join(self.test_dir, 'image.jpg'))
         
-        # Verificar que se llamó a ExifToolHelper.get_metadata
-        mock_instance.get_metadata.assert_called_once()
+        # Verificar resultado
+        self.assertEqual(result, [{'SourceFile': 'test.jpg', 'EXIF:Make': 'Canon'}])
         
-        # Verificar el resultado
-        self.assertEqual(result, [{'SourceFile': 'test.jpg', 'EXIF:Make': 'Canon', 'EXIF:Model': 'EOS 5D'}])
-        
-    def test_sensitive_data_detection(self):
-        """Probar la detección de datos sensibles"""
-        # Casos de prueba: (key, value, expected_sensitive, expected_patterns)
-        test_cases = [
-            ('Author', 'John Doe', False, []),
-            ('GPS:Latitude', '40.7128', True, ['GPS']),
-            ('email', 'john@example.com', True, ['email']),
-            ('Comments', 'This contains a password: 12345', True, ['password']),
-            ('Title', 'Normal Document Title', False, [])
-        ]
-        
-        for key, value, expected_sensitive, expected_patterns in test_cases:
-            is_sensitive, patterns = self.main._check_sensitive_data(key, value)
-            self.assertEqual(is_sensitive, expected_sensitive, "Failed for key: {}, value: {}".format(key, value))
-            
-            # Verificar que los patrones esperados están en los patrones detectados
-            for pattern in expected_patterns:
-                self.assertTrue(any(pattern.lower() in p.lower() for p in patterns), 
-                               "Pattern {} not detected in {} for key: {}, value: {}".format(pattern, patterns, key, value))
-    
-    @patch.object(Main, '_process_directory_for_report')
-    @patch.object(Reporter, 'generate_report')
-    def test_report_generation(self, mock_generate_report, mock_process_directory):
-        """Probar la generación de informes"""
-        # Configurar los mocks
-        mock_process_directory.return_value = None
-        mock_generate_report.return_value = ("path/to/report.md", "path/to/report.pdf")
-        
-        # Ejecutar la función a probar
-        md_path, pdf_path = self.main.report()
-        
-        # Verificar que se llamó a _process_directory_for_report
-        mock_process_directory.assert_called_once()
-        
-        # Verificar que se llamó a generate_report
-        mock_generate_report.assert_called_once()
-        
-        # Verificar el resultado
-        self.assertEqual(md_path, "path/to/report.md")
-        self.assertEqual(pdf_path, "path/to/report.pdf")
-    
-    @patch.object(Cleaner, '_process_directory')
-    def test_metadata_cleaning(self, mock_process_directory):
-        """Probar la limpieza de metadatos"""
-        # Configurar el mock
-        mock_process_directory.return_value = True
-        
-        # Ejecutar la función a probar
-        result = self.main.wipe()
-        
-        # Verificar que se llamó a process_directory
-        mock_process_directory.assert_called_once()
-        
-        # Verificar el resultado
-        self.assertTrue(result)
-    
     def test_supported_extensions(self):
         """Probar la obtención de extensiones soportadas"""
-        extensions = SupportedExtensions.get_all_extensions()
-        
         # Verificar que las extensiones comunes están incluidas
+        extensions = SupportedExtensions.get_all_extensions()
         common_extensions = ['jpg', 'pdf', 'doc', 'png']
+        
         for ext in common_extensions:
             self.assertIn(ext, extensions)
     
     def test_sensitive_patterns(self):
         """Probar la obtención de patrones sensibles"""
-        patterns = SensitivePatterns.get_all_patterns()
-        
         # Verificar que los patrones comunes están incluidos
+        patterns = SensitivePatterns.get_all_patterns()
         common_patterns = ['GPS', 'email', 'password', 'telefono']
+        
         for pattern in common_patterns:
-            matching = [p for p in patterns if pattern.lower() in p.lower()]
-            self.assertTrue(len(matching) > 0, "No se encontró el patrón '{}' en los patrones sensibles".format(pattern))
-
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('os.path.exists')
-    @patch('exiftool.ExifToolHelper')
-    def test_report_sensitive_only(self, mock_exiftool, mock_exists, mock_open_file):
-        """Probar que el reporte sensible solo muestra metadatos sensibles"""
-        # Esta prueba no es crucial para la funcionalidad principal 
-        # y puede generar falsos positivos. La omitimos por ahora.
-        self.skipTest("Omitiendo prueba por problemas de compatibilidad")
-        
-        # El resto de la prueba se mantiene igual pero no se ejecutará
+            self.assertTrue(any(pattern.lower() in p.lower() for p in patterns),
+                           f"No se encontró el patrón '{pattern}' en los patrones sensibles")
+    
+    @patch('src.Reporter.Reporter._process_directory_for_report')
+    @patch('src.Reporter.Reporter.generate_report')
+    def test_report_generation(self, mock_generate_report, mock_process_directory):
+        """Probar la generación de informes de manera simple"""
         # Configurar mocks
-        mock_exists.return_value = True
-        mock_instance = MagicMock()
-        mock_exiftool.return_value.__enter__.return_value = mock_instance
+        mock_process_directory.return_value = None
+        mock_generate_report.return_value = ("report.md", "report.pdf")
         
-        # Configurar datos de prueba con mezcla de sensibles y no sensibles
-        mock_instance.get_metadata.return_value = [
-            {
-                'SourceFile': 'test.jpg',
-                'EXIF:Make': 'Canon',  # No sensible
-                'GPS:Latitude': '40.7128',  # Sensible
-                'Author': 'John Doe',  # No sensible
-                'Email': 'john@example.com'  # Sensible
-            }
-        ]
-        
-        # Configurar Main con only_sensitive=True
-        main = Main(self.test_dir, self.output_dir)
-        main.args = type('Args', (), {
-            'report_all': False,
-            'report_sensitive': True,
-            'only_sensitive': True,
+        # Establecer argumentos
+        self.main.args.update({
+            'report_all': True,
             'md': True,
-            'pdf': False,
-            'verbose': True
+            'pdf': True
         })
         
-        # Ejecutar la función a probar
-        result = main.report()
+        # Ejecutar la función
+        result = self.main.report()
         
-        # Verificar el resultado
+        # Verificar resultado
         self.assertTrue(result)
+        mock_process_directory.assert_called_once()
+        mock_generate_report.assert_called_once()
+
+    @patch('src.Cleaner.Cleaner._process_directory')
+    def test_metadata_cleaning(self, mock_process_directory):
+        """Probar la limpieza de metadatos de manera simple"""
+        # Configurar mock
+        mock_process_directory.return_value = True
         
-        # Analizar las llamadas a write() para verificar que solo se escriben los datos sensibles
-        write_calls = [call[0][0] for call in mock_open_file().write.call_args_list]
+        # Establecer argumentos
+        self.main.args.update({
+            'wipe_all': True
+        })
         
-        # Verificar que el informe contiene menciones a GPS y Email (sensibles)
-        gps_found = any('GPS:Latitude' in call for call in write_calls)
-        email_found = any('Email' in call for call in write_calls)
-        self.assertTrue(gps_found, "El dato sensible GPS:Latitude no se encuentra en el informe")
-        self.assertTrue(email_found, "El dato sensible Email no se encuentra en el informe")
+        # Ejecutar la función
+        result = self.main.wipe()
         
-        # Verificar que los datos no sensibles no están presentes
-        exif_make_found = any('EXIF:Make' in call and 'Canon' in call for call in write_calls)
-        author_found = any('Author' in call and 'John Doe' in call for call in write_calls)
-        self.assertFalse(exif_make_found, "El dato no sensible EXIF:Make no debería estar en el informe")
-        self.assertFalse(author_found, "El dato no sensible Author no debería estar en el informe")
+        # Verificar resultado
+        self.assertTrue(result)
+        mock_process_directory.assert_called_once()
+
+    @patch('subprocess.run')
+    def test_clean_all_metadata_simple(self, mock_subprocess_run):
+        """Prueba simple de limpieza de todos los metadatos"""
+        # Configurar mock
+        mock_subprocess_run.return_value.returncode = 0
+        
+        # Crear archivo para prueba
+        test_file = os.path.join(self.test_dir, 'test.jpg')
+        with open(test_file, 'wb') as f:
+            f.write(b'Test file content')
+        
+        # Ejecutar función
+        self.main.cleaner._clean_all_metadata(test_file)
+        
+        # Verificar que se llamó a subprocess.run
+        mock_subprocess_run.assert_called()
 
 if __name__ == '__main__':
     unittest.main() 

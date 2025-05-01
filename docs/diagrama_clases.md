@@ -2,6 +2,12 @@
 
 Este documento presenta el diseño estático de clases de la aplicación MetaInfo, describiendo sus atributos, métodos y relaciones.
 
+## Navegación de la Documentación
+
+- [← Volver al Índice](indice.md)
+- [Ver Diagrama de Componentes](diagrama_componentes.md)
+- [Ver Diagramas de Interacción](diagramas_interaccion.md)
+
 ## Diagrama de Clases
 
 ```mermaid
@@ -50,9 +56,12 @@ classDiagram
     class Cleaner {
         -Main main
         -Object args
+        -Boolean verbose
+        -Boolean sensitive
         +constructor(main_instance)
         +clean_metadata(src_path)
         -_process_directory(directory, lower_extensions, upper_extensions)
+        -_clean_all_metadata(file_path)
         -_clean_sensitive_metadata(file_path)
     }
 
@@ -198,24 +207,22 @@ Clase responsable de limpiar metadatos de archivos.
 #### Atributos
 - `main`: Referencia a la instancia de Main
 - `args`: Argumentos de línea de comandos
+- `verbose`: Indicador de modo detallado
+- `sensitive`: Indicador de modo de limpieza sensitiva
 
 #### Métodos
 - `constructor`: Inicializa la clase con una referencia a Main
-- `clean_metadata`: Limpia los metadatos de los archivos en un directorio
-- `_process_directory`: Procesa recursivamente un directorio para limpiar metadatos
-- `_clean_sensitive_metadata`: Limpia solo los metadatos sensibles de un archivo
+- `clean_metadata`: Método principal que coordina la limpieza de metadatos
+- `_process_directory`: Procesa recursivamente directorios
+- `_clean_all_metadata`: Elimina todos los metadatos de un archivo
+- `_clean_sensitive_metadata`: Elimina solo los metadatos sensibles
 
 ### Messages
 Clase que centraliza todos los mensajes al usuario y proporciona métodos para mostrarlos.
 
 #### Atributos (constantes)
-- Múltiples constantes para diferentes categorías de mensajes:
-  - Mensajes de error generales
-  - Mensajes relacionados con dependencias
-  - Mensajes relacionados con la generación de informes
-  - Mensajes informativos
-  - Mensajes de depuración
-
+- Múltiples constantes para diferentes categorías de mensajes
+  
 #### Métodos
 - `print_error`: Imprime un mensaje de error formateado
 - `print_info`: Imprime un mensaje informativo formateado
@@ -235,13 +242,8 @@ Clase que proporciona métodos para validar parámetros y obtener valores seguro
 Clase que define los patrones considerados sensibles para detectar en metadatos.
 
 #### Atributos (constantes)
-- `SPANISH`: Lista de patrones sensibles en español
-- `ENGLISH`: Lista de patrones sensibles en inglés
-- `FRENCH`: Lista de patrones sensibles en francés
-- `GERMAN`: Lista de patrones sensibles en alemán
-- `ITALIAN`: Lista de patrones sensibles en italiano
-- `PORTUGUESE`: Lista de patrones sensibles en portugués
-- `DEVICE_METADATA`: Lista de metadatos específicos de dispositivos
+- Listas de patrones sensibles en varios idiomas
+- Lista de metadatos específicos de dispositivos
 
 #### Métodos
 - `get_all_patterns`: Obtiene todos los patrones sensibles
@@ -252,9 +254,7 @@ Clase que define los patrones considerados sensibles para detectar en metadatos.
 Clase que define las extensiones de archivo soportadas.
 
 #### Atributos (constantes)
-- `IMAGES`: Lista de extensiones de imágenes
-- `DOCUMENTS`: Lista de extensiones de documentos
-- `MEDIA`: Lista de extensiones multimedia
+- Listas de extensiones por categoría
 
 #### Métodos
 - `get_all_extensions`: Obtiene todas las extensiones soportadas
@@ -269,4 +269,19 @@ Clase que define las extensiones de archivo soportadas.
 - `Main`, `Reporter` y `Cleaner` utilizan `ParameterValidator` para validar y obtener valores seguros.
 - `Main` utiliza las clases `SensitivePatterns` y `SupportedExtensions` para obtener datos constantes.
 - `Reporter` y `Cleaner` mantienen referencias a la instancia de `Main` para acceder a sus métodos y atributos.
-- No hay herencia entre clases, se utiliza composición para la reutilización de código. 
+- No hay herencia entre clases, se utiliza composición para la reutilización de código.
+
+## Correspondencia con el Diagrama de Componentes
+
+Este diagrama de clases implementa los componentes de alto nivel definidos en el [Diagrama de Componentes](diagrama_componentes.md):
+
+- La clase `MetaInfo` implementa la **Interfaz de Línea de Comandos**
+- La clase `Main` implementa el **Núcleo de Aplicación**
+- La clase `Reporter` implementa el **Sistema de Informes**
+- La clase `Cleaner` implementa el **Sistema de Limpieza**
+- La funcionalidad dentro de `Main` implementa el **Analizador de Metadatos** y **Detector de Datos Sensibles**
+- Las clases `SensitivePatterns` y `SupportedExtensions` implementan las **Bases de Conocimiento**
+
+---
+
+*Última actualización: 11/06/2024* 
