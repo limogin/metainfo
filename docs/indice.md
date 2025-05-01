@@ -1,92 +1,89 @@
-# Índice de la Documentación Técnica
+# Índice de la Documentación
 
 ## Introducción
-Este documento sirve como guía para navegar a través de la documentación técnica de la aplicación MetaInfo, una herramienta desarrollada para la gestión de metadatos en archivos. La documentación sigue los principios del Proceso Unificado (UP), incorporando patrones GRASP (General Responsibility Assignment Software Patterns) y patrones de diseño GoF (Gang of Four).
+
+Este documento sirve como guía principal para navegar por la documentación técnica de MetaInfo, una aplicación especializada en el análisis y gestión de metadatos en archivos digitales. La documentación está estructurada para proporcionar una comprensión progresiva del sistema, sus fundamentos teóricos y su implementación práctica.
 
 ## Metodología de Desarrollo
-La aplicación MetaInfo ha sido desarrollada siguiendo un enfoque iterativo e incremental basado en el Proceso Unificado, poniendo énfasis en:
 
-- **Arquitectura centrada en casos de uso**: La funcionalidad del sistema ha sido diseñada a partir de los casos de uso identificados durante el análisis de requisitos.
-- **Desarrollo dirigido por riesgos**: Las partes más críticas del sistema fueron abordadas primero para mitigar riesgos técnicos.
-- **Verificación continua de la calidad**: Mediante pruebas unitarias y de integración en cada fase del desarrollo.
+La documentación sigue los principios del **Proceso Unificado (UP)** utilizando notación **UML**:
+
+- **Dirigido por casos de uso**: La arquitectura se centra en resolver escenarios de uso específicos
+- **Centrado en la arquitectura**: Estructura modular con separación clara de responsabilidades
+- **Iterativo e incremental**: Desarrollo por fases con mejoras continuas
+- **Dirigido por riesgos**: Análisis temprano de riesgos técnicos y de negocio
+- **Verificación continua de la calidad**: Pruebas unitarias e integración automatizadas
 
 ## Patrones de Diseño Aplicados
-La aplicación implementa varios patrones de diseño que mejoran su mantenibilidad y escalabilidad:
 
 ### Patrones GRASP
-- **Experto en Información**: Las clases como `Main`, `Reporter` y `Cleaner` encapsulan la información necesaria para realizar sus responsabilidades.
-- **Creador**: Se asigna la responsabilidad de crear objetos a las clases que tienen la información necesaria para inicializarlos correctamente.
-- **Alta Cohesión y Bajo Acoplamiento**: Las clases están diseñadas para tener un propósito único y bien definido, con dependencias mínimas entre ellas.
-- **Controlador**: La clase `MetaInfo` actúa como un controlador central que coordina las operaciones del sistema.
+Los patrones General Responsibility Assignment Software Patterns aplicados incluyen:
+
+- **Creador**: Asignación adecuada de responsabilidades de creación
+- **Experto en Información**: Distribución de responsabilidades según el conocimiento
+- **Alta Cohesión y Bajo Acoplamiento**: Organización eficiente de componentes
+- **Controlador**: Gestión centralizada de eventos del sistema
+- **Polimorfismo**: Comportamientos variables a través de interfaces comunes
 
 ### Patrones GoF
-- **Singleton**: Utilizado para garantizar que solo existe una instancia de ciertas clases, como el gestor de mensajes (`Messages`).
-- **Facade**: La clase `Main` proporciona una interfaz simplificada al subsistema complejo de gestión de metadatos.
-- **Strategy**: Permite seleccionar diferentes algoritmos para la limpieza de metadatos (completa o selectiva) en tiempo de ejecución.
+Los patrones Gang of Four implementados incluyen:
+
+- **Patrones Creacionales**: Factory Method, Singleton
+- **Patrones Estructurales**: Facade, Adapter
+- **Patrones de Comportamiento**: Strategy, Template Method, Observer
 
 ## Estructura de la Documentación
 
-1. [**Arquitectura Modular**](arquitectura_modular.md)
-   - Descripción de los módulos principales y sus interacciones
-   - Principios de diseño aplicados
+La documentación está organizada en un orden lógico de estudio:
 
-2. [**Diagrama de Clases**](diagrama_clases.md)
-   - Estructura estática del sistema
-   - Relaciones entre las clases principales
+1. **[Índice Técnico](indice_tecnico.md)**: Guía detallada sobre la organización y metodología
+2. **[Modelo de Dominio](modelo_dominio.md)**: Conceptos clave y relaciones
+3. **[Casos de Uso](casos_uso.md)**: Escenarios de interacción usuario-sistema
+4. **[Arquitectura por Capas](arquitectura_capas.md)**: Estructura general del sistema
+5. **[Diagrama de Clases](diagrama_clases.md)**: Diseño estático y relaciones entre clases
+6. **[Diagramas de Interacción](diagramas_interaccion.md)**: Comportamiento dinámico del sistema
+7. **[Arquitectura Modular](arquitectura_modular.md)**: Componentes y sus interacciones
+8. **[Diagrama de Flujo de Datos](diagrama_flujo_datos.md)**: Procesamiento de información
 
-3. [**Diagramas de Interacción**](diagramas_interaccion.md)
-   - Secuencias de interacción entre objetos
-   - Colaboraciones para casos de uso clave
-
-4. [**Casos de Uso**](casos_uso.md)
-   - Descripción detallada de los casos de uso
-   - Flujos principales y alternativos
-
-5. [**Diagrama de Flujo de Datos**](diagrama_flujo_datos.md)
-   - Representación del flujo de información en el sistema
-   - Transformaciones de datos entre componentes
-
-6. [**Arquitectura por Capas**](arquitectura_capas.md)
-   - Organización del sistema en capas lógicas
-   - Mecanismos de comunicación entre capas
-
-7. [**Modelo de Dominio**](modelo_dominio.md)
-   - Conceptos clave del dominio y sus relaciones
-   - Reglas de negocio implementadas
-
-## Aspectos Funcionales Destacados
+## Aspectos Funcionales
 
 ### Gestión de Metadatos
-La aplicación permite la detección, análisis y manipulación de metadatos en diversos tipos de archivos, centrándose en:
+MetaInfo ofrece capacidades para:
 
-- **Detección de información sensible**: Identificación de patrones sensibles en los metadatos mediante expresiones regulares y análisis heurístico.
-- **Limpieza selectiva**: Capacidad para eliminar solo los metadatos que contienen información sensible.
-- **Generación de informes**: Creación de reportes detallados en formatos Markdown, HTML y PDF.
+- **Detectar y extraer** metadatos de diversos tipos de archivos
+- **Identificar información sensible** mediante patrones predefinidos y personalizables
+- **Generar informes detallados** en formatos Markdown, HTML y PDF
+- **Limpiar selectivamente** metadatos que contienen información sensible
 
 ### Extensibilidad
-El diseño modular facilita la incorporación de:
+El sistema está diseñado para facilitar:
 
-- Nuevos formatos de archivo
-- Patrones adicionales para la detección de información sensible
-- Formatos de informe personalizados
+- La incorporación de **nuevos formatos de archivo**
+- La definición de **patrones adicionales** para detectar información sensible
+- La implementación de **nuevos formatos de informe**
+- La integración de **estrategias alternativas de limpieza**
 
 ## Guía de Estudio Recomendada
 
-Para comprender eficientemente la arquitectura y funcionamiento de MetaInfo, se recomienda seguir este orden de lectura:
+Para una comprensión completa del sistema, se recomienda:
 
-1. Casos de Uso: Para entender qué hace el sistema
-2. Arquitectura Modular: Para obtener una visión general de los componentes
-3. Modelo de Dominio: Para familiarizarse con los conceptos clave
-4. Diagrama de Clases: Para conocer la estructura estática
-5. Diagramas de Interacción: Para entender el comportamiento dinámico
-6. Arquitectura por Capas: Para profundizar en los aspectos de implementación
-7. Diagrama de Flujo de Datos: Para analizar la transformación de la información
+1. Comenzar con el **Índice Técnico** para entender la organización general
+2. Continuar con el **Modelo de Dominio** y los **Casos de Uso** para una visión conceptual
+3. Examinar la **Arquitectura por Capas** para comprender la estructura general
+4. Profundizar en el **Diagrama de Clases** para entender las relaciones entre componentes
+5. Estudiar los **Diagramas de Interacción** para ver el comportamiento dinámico
+6. Analizar la **Arquitectura Modular** y el **Diagrama de Flujo de Datos** para comprender el funcionamiento detallado
 
-## Consideraciones para el Desarrollo Futuro
+## Desarrollo Futuro
 
-La documentación también incluye directrices para futuras mejoras, centradas en:
+La documentación destaca áreas para posible expansión:
 
-- Ampliación de los formatos de archivo soportados
-- Mejora de los algoritmos de detección de información sensible
-- Optimización del rendimiento para grandes volúmenes de archivos
-- Integración con sistemas de gestión documental 
+- **Soporte para nuevos formatos de archivo**
+- **Detección avanzada de patrones** utilizando técnicas de aprendizaje automático
+- **Integración con sistemas de seguridad** para gestión automatizada de riesgos
+- **Interfaz gráfica de usuario** para facilitar la interacción
+- **Extensión a entornos multiusuario** y servicios en la nube
+
+---
+
+Esta documentación refleja el compromiso con un diseño de alta calidad y la aplicación de principios sólidos de ingeniería de software para crear una herramienta robusta y extensible para la gestión de metadatos. 

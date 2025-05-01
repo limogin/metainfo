@@ -4,6 +4,8 @@ Facilita el mantenimiento y la consistencia de la interfaz.
 """
 
 class Messages:
+
+    WARNING_NO_ACTION = "ADVERTENCIA: No se ha especificado ninguna acción. Use --report, --wipe o --version"
     # Mensajes de error generales
     ERROR_NO_INPUT_FOLDER = "Error: No se ha especificado la carpeta de entrada. Use --i ruta_carpeta"
     ERROR_FOLDER_NOT_EXISTS = "Error: La carpeta {0} no existe"
@@ -129,6 +131,23 @@ NOTA SOBRE FORMATOS DE SALIDA:
             verbose: Si es True, se imprime el mensaje
         """
         # Solo imprime mensajes de depuración si verbose es True
+        if not verbose:
+            return
+            
+        if args:
+            print(message.format(*args))
+        else:
+            print(message)
+
+    def print_warning(message, *args, verbose=False):
+        """
+        Imprime un mensaje de advertencia formateado, solo si verbose es True.
+        
+        Args:
+            message: El mensaje a imprimir
+            *args: Argumentos para formatear el mensaje
+            verbose: Si es True, se imprime el mensaje
+        """
         if not verbose:
             return
             

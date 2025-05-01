@@ -1,5 +1,9 @@
 # Índice de Documentación Técnica
 
+## Introducción
+
+Este documento sirve como índice principal para la documentación técnica de MetaInfo, una herramienta especializada en el análisis y gestión de metadatos en archivos digitales. El índice está organizado siguiendo un enfoque metodológico que facilita la comprensión progresiva del sistema, desde sus aspectos conceptuales hasta los detalles de implementación.
+
 ## Metodología de Desarrollo
 
 Esta documentación técnica está estructurada siguiendo los principios del **Proceso Unificado (UP)** con notación **UML** (Unified Modeling Language), e implementa los patrones de diseño **GRASP** (General Responsibility Assignment Software Patterns) y **GoF** (Gang of Four) para garantizar un diseño orientado a objetos de alta calidad.
@@ -54,6 +58,24 @@ Para comprender completamente la arquitectura y funcionamiento de MetaInfo, se r
    * Flujos de información
    * Puntos de integración
 
+## Aspectos Funcionales Destacados
+
+### Gestión de Metadatos
+La aplicación permite la detección, análisis y manipulación de metadatos en diversos tipos de archivos, centrándose en:
+
+- **Extracción de metadatos**: Identificación y extracción de metadatos de múltiples formatos de archivo mediante herramientas especializadas
+- **Detección de información sensible**: Identificación de patrones sensibles en los metadatos mediante expresiones regulares y análisis heurístico
+- **Limpieza selectiva**: Capacidad para eliminar solo los metadatos que contienen información sensible
+- **Generación de informes**: Creación de reportes detallados en formatos Markdown, HTML y PDF
+
+### Extensibilidad del Sistema
+El diseño modular facilita la incorporación de:
+
+- Nuevos formatos de archivo para análisis
+- Patrones adicionales para la detección de información sensible
+- Formatos de informe personalizados
+- Estrategias alternativas de limpieza de metadatos
+
 ## Patrones GRASP Implementados
 
 * **Creador**: Asignación de responsabilidades de creación a clases específicas (ej: `Main` crea instancias de `Reporter`).
@@ -68,6 +90,8 @@ Para comprender completamente la arquitectura y funcionamiento de MetaInfo, se r
 * **Strategy**: Diferentes estrategias para el procesamiento de metadatos según el tipo de archivo.
 * **Template Method**: Estructura común para la generación de informes con pasos personalizables.
 * **Observer**: Notificaciones durante el proceso de análisis y limpieza.
+* **Singleton**: Utilizado para garantizar que solo existe una instancia de ciertas clases, como el gestor de mensajes.
+* **Facade**: La clase `Main` proporciona una interfaz simplificada al subsistema complejo de gestión de metadatos.
 
 ## Principios de Diseño Adicionales
 

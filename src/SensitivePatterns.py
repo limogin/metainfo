@@ -2,6 +2,14 @@ class SensitivePatterns:
     """
     Clase que define los patrones considerados sensibles para detectar en metadatos.
     """
+
+    NEGATIVE_PATTERNS = [
+        "sourcefile",
+        "filename",    
+        "exiftoolversion",
+        "exiftool:exiftoolversion",        
+        "file:filename",
+    ]
     
     # Patrones sensibles en español
     SPANISH = [
@@ -168,6 +176,13 @@ class SensitivePatterns:
         "device_serial_number",
         "exif_version"
     ]
+    
+    @classmethod
+    def get_negative_patterns(cls):
+        """
+        Obtiene los patrones negativos.
+        """
+        return cls.NEGATIVE_PATTERNS
     
     @classmethod
     def get_all_patterns(cls):
