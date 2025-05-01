@@ -1,4 +1,8 @@
-# MetaInfo - Documentación del Sistema
+# <img src="https://raw.githubusercontent.com/wiki/exiftool/exiftool/images/ExifTool.svg" width="32" height="32" alt="Logo" style="vertical-align:middle"> MetaInfo
+
+> *Análisis y gestión de metadatos para proteger la privacidad*
+
+---
 
 ## Descripción General
 

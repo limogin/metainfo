@@ -1,21 +1,3 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="300" height="120" viewBox="0 0 300 120">
-  <style>
-    .title { fill: #2c3e50; font-family: 'Arial', sans-serif; font-size: 36px; font-weight: bold; }
-    .subtitle { fill: #34495e; font-family: 'Arial', sans-serif; font-size: 16px; }
-    .icon-bg { fill: #3498db; }
-    .icon-fg { fill: white; }
-    .icon-highlight { fill: #2ecc71; }
-  </style>
-  <circle cx="60" cy="60" r="50" class="icon-bg" />
-  <g transform="translate(35, 35)">
-    <rect x="0" y="0" width="50" height="10" rx="2" class="icon-fg" />
-    <rect x="0" y="15" width="40" height="10" rx="2" class="icon-fg" />
-    <rect x="0" y="30" width="30" height="10" rx="2" class="icon-fg" />
-    <rect x="0" y="45" width="20" height="10" rx="2" class="icon-highlight" />
-  </g>
-  <text x="120" y="55" class="title">MetaInfo</text>
-  <text x="120" y="80" class="subtitle">Análisis y gestión de metadatos</text>
-</svg>
 
 # MetaInfo
 
