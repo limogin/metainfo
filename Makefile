@@ -16,7 +16,6 @@ PANDOC_OPTS = --toc --toc-depth=3 --number-sections
 # Orden específico de archivos para la documentación
 MD_FILES = $(DOCS_SRC)/README.md \
            $(DOCS_SRC)/indice.md \
-		   $(DOCS_SRC)/indice_tecnico.md \
 		   $(DOCS_SRC)/modelo_dominio.md \
 		   $(DOCS_SRC)/arquitectura_capas.md \
 		   $(DOCS_SRC)/arquitectura_modular.md \
@@ -25,8 +24,7 @@ MD_FILES = $(DOCS_SRC)/README.md \
            $(DOCS_SRC)/casos_uso.md \
            $(DOCS_SRC)/diagrama_componentes.md \
            $(DOCS_SRC)/diagrama_clases.md \
-		   
-		   
+		   		   
 
 # Target predeterminado
 all: build

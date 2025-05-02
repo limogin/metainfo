@@ -89,7 +89,12 @@ class TestMetaInfo(unittest.TestCase):
         """Probar la generación de informes de manera simple"""
         # Configurar mocks
         mock_process_directory.return_value = None
-        mock_generate_report.return_value = ("report.md", "report.pdf")
+        # El nombre real del archivo incluirá un timestamp, por lo que usamos patrones que coincidan
+        mock_generate_report.return_value = (
+            os.path.join(self.output_dir, "reports", "metadata_report_20230101_120000.md"),
+            os.path.join(self.output_dir, "reports", "metadata_report_20230101_120000.pdf"),
+            None
+        )
         
         # Establecer argumentos
         self.main.args.update({

@@ -9,6 +9,7 @@ import pypandoc
 from src.Messages import Messages
 from src.ParameterValidator import ParameterValidator
 from src.resources.templates import Templates
+from src.SensitivePatterns import SensitivePatterns
 
 class Reporter:
     """
@@ -124,7 +125,7 @@ class Reporter:
                 md_content = f.read()
             
             # Convertir Markdown a HTML
-            html_content = markdown.markdown(md_content, extensions=['tables', 'toc'])
+            html_content = markdown.markdown(md_content, extensions=['tables', 'toc', 'fenced_code', 'codehilite', 'attr_list'])
             
             # Añadir estilos CSS para mejorar la apariencia
             styled_html = f"""<!DOCTYPE html>
@@ -134,6 +135,19 @@ class Reporter:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Informe de Metadatos</title>
     {Templates.get_html_style()}
+    <style>
+        details summary {{ 
+            cursor: pointer; 
+            font-weight: bold;
+            margin: 1em 0;
+        }}
+        code {{
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }}
+    </style>
 </head>
 <body>
     {html_content}
@@ -352,10 +366,55 @@ classoption: oneside
 3. **Políticas de Seguridad**: Implemente políticas para la verificación rutinaria de metadatos antes de publicar o compartir archivos.
 4. **Herramientas de Limpieza**: Utilice la funcionalidad de limpieza de esta herramienta ejecutando el comando con la opción `--clean`.
 
----
-
-*Informe generado por MetaInfo Tool*
 """
+
+        # Añadir sección con los patrones utilizados para detectar información sensible
+        content += """## Patrones de Detección de Información Sensible
+
+A continuación se muestran los patrones utilizados por MetaInfo para identificar potencialmente información sensible en los metadatos.
+
+"""
+        # Añadir patrones en español
+        content += "### Español\n"
+        spanish_patterns = ", ".join(f"`{p}`" for p in self.main.sensitive_patterns if p in SensitivePatterns.SPANISH)
+        content += f"{spanish_patterns}\n\n"
+        
+        # Añadir patrones en inglés
+        content += "### Inglés\n"
+        english_patterns = ", ".join(f"`{p}`" for p in self.main.sensitive_patterns if p in SensitivePatterns.ENGLISH)
+        content += f"{english_patterns}\n\n"
+        
+        # Añadir patrones de dispositivos
+        content += "### Metadatos de Dispositivos\n"
+        device_patterns = ", ".join(f"`{p}`" for p in self.main.sensitive_patterns if p in SensitivePatterns.DEVICE_METADATA)
+        content += f"{device_patterns}\n\n"
+        
+        # Añadir otros idiomas en sección contraída
+        content += "<details>\n<summary>Patrones en otros idiomas (Francés, Alemán, Italiano, Portugués)</summary>\n\n"
+        
+        # Francés
+        content += "#### Francés\n"
+        french_patterns = ", ".join(f"`{p}`" for p in self.main.sensitive_patterns if p in SensitivePatterns.FRENCH)
+        content += f"{french_patterns}\n\n"
+        
+        # Alemán
+        content += "#### Alemán\n"
+        german_patterns = ", ".join(f"`{p}`" for p in self.main.sensitive_patterns if p in SensitivePatterns.GERMAN)
+        content += f"{german_patterns}\n\n"
+        
+        # Italiano
+        content += "#### Italiano\n"
+        italian_patterns = ", ".join(f"`{p}`" for p in self.main.sensitive_patterns if p in SensitivePatterns.ITALIAN)
+        content += f"{italian_patterns}\n\n"
+        
+        # Portugués
+        content += "#### Portugués\n"
+        portuguese_patterns = ", ".join(f"`{p}`" for p in self.main.sensitive_patterns if p in SensitivePatterns.PORTUGUESE)
+        content += f"{portuguese_patterns}\n\n"
+        
+        content += "</details>\n\n"
+        
+        content += "---\n\n*Informe generado por MetaInfo Tool*\n"
         
         return content
 

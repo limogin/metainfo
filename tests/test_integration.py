@@ -7,6 +7,7 @@ import sys
 import tempfile
 import shutil
 import subprocess
+import glob
 from unittest.mock import patch
 
 # Añadir la ruta raíz del proyecto al path para poder importar los módulos
@@ -58,8 +59,9 @@ class TestIntegration(unittest.TestCase):
             
             # Verificar resultado
             self.assertTrue(result, "La generación del informe falló")
-            self.assertTrue(os.path.exists(os.path.join(self.output_dir, 'report.md')), 
-                          "No se generó el archivo report.md")
+            reports_dir = os.path.join(self.output_dir, 'reports')
+            markdown_files = glob.glob(os.path.join(reports_dir, '*.md'))
+            self.assertTrue(len(markdown_files) > 0, "No se generó ningún archivo de reporte en formato Markdown")
 
     def test_basic_clean_workflow(self):
         """Prueba básica del flujo de limpieza de metadatos"""

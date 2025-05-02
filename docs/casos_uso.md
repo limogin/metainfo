@@ -5,7 +5,6 @@ Este documento describe los principales casos de uso de la aplicación MetaInfo,
 ## Navegación de la Documentación
 
 - [← Volver al Índice](indice.md)
-- [Ver Diagrama de Componentes](diagrama_componentes.md)
 - [Ver Diagrama de Clases](diagrama_clases.md)
 
 ## Diagrama de Casos de Uso

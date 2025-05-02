@@ -5,8 +5,7 @@ Este documento presenta el diseño estático de clases de la aplicación MetaInf
 ## Navegación de la Documentación
 
 - [← Volver al Índice](indice.md)
-- [Ver Diagrama de Componentes](diagrama_componentes.md)
-- [Ver Diagramas de Interacción](diagramas_interaccion.md)
+- [Ver Casos de Uso](casos_uso.md)
 
 ## Diagrama de Clases
 

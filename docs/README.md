@@ -8,9 +8,8 @@ MetaInfo es una aplicación especializada en el análisis y gestión de metadato
 
 | Documentación Principal | Diagramas | Técnica |
 |------------------------|-----------|---------|
-| [📋 Índice Principal](indice.md) | [🔍 Diagrama de Componentes](diagrama_componentes.md) | [📘 Actualizaciones Recientes](#actualizaciones-recientes) |
-| [📚 Casos de Uso](casos_uso.md) | [📊 Diagrama de Clases](diagrama_clases.md) | [🔧 Instalación y Dependencias](#instalación-y-dependencias) |
-| [📐 Modelo de Dominio](modelo_dominio.md) | [📈 Diagramas de Interacción](diagramas_interaccion.md) | [📝 Ejemplos de Uso](#ejemplos-de-uso) |
+| [📋 Índice Principal](indice.md) | [🔍 Diagrama de Clases](diagrama_clases.md) | [📘 Actualizaciones Recientes](#actualizaciones-recientes) |
+| [📚 Casos de Uso](casos_uso.md) | [📊 Ejemplos de Uso](#ejemplos-de-uso) | [🔧 Instalación y Dependencias](#instalación-y-dependencias) |
 
 ## Actualizaciones Recientes
 
@@ -69,12 +68,11 @@ python metainfo.py --i ~/Documentos/ParaPublicar --wipe_all
 
 ## Estructura de la Documentación
 
-La documentación sigue un enfoque progresivo, desde aspectos conceptuales hasta detalles de implementación:
+La documentación sigue un enfoque progresivo y simplificado:
 
 1. **[Índice](indice.md)** - Punto de entrada principal a toda la documentación
 2. **[Casos de Uso](casos_uso.md)** - Escenarios de interacción usuario-sistema
-3. **[Diagrama de Componentes](diagrama_componentes.md)** - Estructura de alto nivel
-4. **[Diagrama de Clases](diagrama_clases.md)** - Detalles de implementación
+3. **[Diagrama de Clases](diagrama_clases.md)** - Estructura principal del sistema
 
 Para más información, consulte el [Índice Principal](indice.md).
 

@@ -2,68 +2,66 @@
 
 ## Navegación Rápida
 
-- 📋 [**Actualizaciones Recientes**](README.md) - Últimas mejoras implementadas
-- 📚 [**Índice Técnico**](indice_tecnico.md) - Guía técnica detallada
-- 🔍 [**Casos de Uso**](casos_uso.md) - Escenarios de interacción usuario-sistema
-- 🏗️ [**Arquitectura**](#documentos-de-arquitectura) - Documentos sobre la estructura del sistema
-- 📊 [**Diagramas**](#documentos-de-diagramas) - Representaciones visuales del sistema
+- 📋 [**Introducción**](#introducción) - ¿Qué es MetaInfo y para qué sirve?
+- 📚 [**Casos de Uso**](casos_uso.md) - Ejemplos prácticos de uso de la aplicación
+- 🔍 [**Diagrama de Clases**](diagrama_clases.md) - Estructura principal del sistema
+- 📊 [**Instalación y Uso**](README.md#instalación-y-dependencias) - Cómo empezar con MetaInfo
+- 🏗️ [**Actualizaciones Recientes**](README.md#actualizaciones-recientes) - Últimas mejoras
 
 ## Introducción
 
-MetaInfo es una aplicación especializada en el análisis y gestión de metadatos en archivos digitales. Esta documentación está estructurada para proporcionar una comprensión progresiva del sistema, sus fundamentos teóricos y su implementación práctica.
+MetaInfo es una aplicación especializada en el análisis y gestión de metadatos en archivos digitales. Permite:
 
-## Documentos de Arquitectura
+- **Detectar y extraer** metadatos de diversos tipos de archivos (imágenes, documentos, etc.)
+- **Identificar información sensible** que podría comprometer tu privacidad
+- **Generar informes detallados** en formatos fáciles de consultar (Markdown, HTML, PDF)
+- **Limpiar selectivamente** metadatos sensibles o eliminarlos todos si lo prefieres
 
-- [**Modelo de Dominio**](modelo_dominio.md) - Conceptos clave y relaciones
-- [**Arquitectura por Capas**](arquitectura_capas.md) - Estructura general del sistema
-- [**Arquitectura Modular**](arquitectura_modular.md) - Componentes y sus interacciones
-- [**Diagrama de Componentes**](diagrama_componentes.md) - Visión de alto nivel de los módulos del sistema
+La aplicación está diseñada para ser fácil de usar tanto para usuarios sin conocimientos técnicos como para profesionales de seguridad informática.
 
-## Documentos de Diagramas
+## Estructura de la Documentación
 
-- [**Diagrama de Clases**](diagrama_clases.md) - Diseño estático y relaciones entre clases
-- [**Diagramas de Interacción**](diagramas_interaccion.md) - Comportamiento dinámico del sistema
-- [**Diagrama de Flujo de Datos**](diagrama_flujo_datos.md) - Procesamiento de información
+Para entender cómo funciona MetaInfo, recomendamos seguir este orden:
 
-## Metodología de Desarrollo
+1. [**Casos de Uso**](casos_uso.md) - Visualiza cómo diferentes personas utilizan la aplicación
+2. [**Diagrama de Clases**](diagrama_clases.md) - Comprende la estructura principal del sistema
 
-La documentación sigue los principios del **Proceso Unificado (UP)** utilizando notación **UML**:
+### ¿Qué puedo hacer con MetaInfo?
 
-- **Dirigido por casos de uso**: La arquitectura se centra en resolver escenarios de uso específicos
-- **Centrado en la arquitectura**: Estructura modular con separación clara de responsabilidades
-- **Iterativo e incremental**: Desarrollo por fases con mejoras continuas
-- **Dirigido por riesgos**: Análisis temprano de riesgos técnicos y de negocio
-- **Verificación continua de la calidad**: Pruebas unitarias e integración automatizadas
+- **Como usuario general**: Analizar archivos para descubrir qué información contienen
+- **Como fotógrafo**: Limpiar datos de localización y dispositivo de tus fotos antes de publicarlas
+- **Como especialista en seguridad**: Identificar y eliminar información sensible en documentos
+- **Como administrador IT**: Preparar documentos para publicación eliminando todos los metadatos
 
-## Aspectos Funcionales
+## Aspectos Técnicos Principales
 
-### Gestión de Metadatos
-MetaInfo ofrece capacidades para:
+MetaInfo está desarrollada siguiendo principios de diseño profesional que aseguran su calidad:
 
-- **Detectar y extraer** metadatos de diversos tipos de archivos
-- **Identificar información sensible** mediante patrones predefinidos y personalizables
-- **Generar informes detallados** en formatos Markdown, HTML y PDF con rutas relativas
-- **Limpiar selectivamente** metadatos que contienen información sensible
-- **Manejo inteligente de archivos** omitiendo formatos sin metadatos relevantes
-- **Recuperación de errores robusta** con múltiples estrategias de limpieza
+- **Diseño modular**: Cada parte de la aplicación tiene una responsabilidad específica
+- **Extensibilidad**: Facilidad para añadir nuevos formatos de archivo y patrones de detección
+- **Robustez**: Manejo inteligente de errores y múltiples estrategias de procesamiento
 
-### Extensibilidad
-El sistema está diseñado para facilitar:
+La implementación sigue metodologías estándar de la industria como patrones GRASP (Alta Cohesión, Bajo Acoplamiento) y patrones GoF (Factory, Strategy), lo que garantiza un código organizado y mantenible.
 
-- La incorporación de **nuevos formatos de archivo**
-- La definición de **patrones adicionales** para detectar información sensible
-- La implementación de **nuevos formatos de informe**
-- La integración de **estrategias alternativas de limpieza**
-- La exclusión de **tipos de archivo específicos** del procesamiento
+## Ejemplos de Uso Rápido
+
+Para analizar archivos y generar un informe:
+```bash
+python metainfo.py --i ~/Documentos --report_all --o ~/Informes --pdf
+```
+
+Para limpiar metadatos sensibles:
+```bash
+python metainfo.py --i ~/Fotos/Privadas --wipe_sensitive --verbose
+```
 
 ## Guía de Estudio Recomendada
 
 Para comprender el sistema de manera efectiva, se recomienda seguir este orden:
 
-1. Primero: [**Actualizaciones Recientes**](README.md) y [**Modelo de Dominio**](modelo_dominio.md)
-2. Segundo: [**Casos de Uso**](casos_uso.md) y [**Arquitectura por Capas**](arquitectura_capas.md)
-3. Tercero: [**Diagrama de Componentes**](diagrama_componentes.md) y [**Diagrama de Clases**](diagrama_clases.md)
-4. Finalmente: [**Diagramas de Interacción**](diagramas_interaccion.md) y [**Diagrama de Flujo de Datos**](diagrama_flujo_datos.md)
+1. [**Actualizaciones Recientes**](README.md#actualizaciones-recientes)
+2. [**Casos de Uso**](casos_uso.md) 
+3. [**Diagrama de Clases**](diagrama_clases.md)
 
 ---
 
