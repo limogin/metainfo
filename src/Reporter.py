@@ -5,6 +5,7 @@ import tempfile
 import subprocess
 import sys
 import pypandoc
+import re
 
 from src.Messages import Messages
 from src.ParameterValidator import ParameterValidator
@@ -26,7 +27,7 @@ class Reporter:
         self.main = main_instance
         self.args = main_instance.args
         self.output_path = self.args.get('output_path', "./")
-        self.veerbose = self.args.get('verbose', False)
+        self.verbose = self.args.get('verbose', False)
         
     def generate_report(self, src_path, metadata_info):
         """
@@ -46,7 +47,7 @@ class Reporter:
             
             html_path = None
             if md_path and html_enabled:
-                html_path = self._generate_html_from_markdown(md_path)
+                html_path = self._generate_html_from_markdown(md_path, src_path)
                 if html_path:
                     Messages.print_info(Messages.INFO_HTML_GENERATED, html_path)
             
@@ -100,12 +101,13 @@ class Reporter:
             Messages.print_error(f"Error al generar informe Markdown: {str(e)}")
             return None
     
-    def _generate_html_from_markdown(self, md_path):
+    def _generate_html_from_markdown(self, md_path, src_path):
         """
         Genera un informe en formato HTML a partir de un archivo Markdown.
         
         Args:
             md_path: Ruta al archivo Markdown
+            src_path: Ruta al directorio analizado
             
         Returns:
             str: Ruta al archivo HTML generado o None en caso de error
@@ -124,8 +126,30 @@ class Reporter:
             with open(md_path, 'r', encoding='utf-8') as f:
                 md_content = f.read()
             
+            # Filtrar los metadatos YAML del contenido Markdown
+            lines = md_content.split('\n')
+            filtered_lines = []
+            in_yaml = False
+            
+            for line in lines:
+                if line.strip() == '---':
+                    in_yaml = not in_yaml
+                    continue
+                if not in_yaml:
+                    filtered_lines.append(line)
+            
+            filtered_content = '\n'.join(filtered_lines)
+            
             # Convertir Markdown a HTML
-            html_content = markdown.markdown(md_content, extensions=['tables', 'toc', 'fenced_code', 'codehilite', 'attr_list'])
+            html_content = markdown.markdown(filtered_content, extensions=['tables', 'toc', 'fenced_code', 'codehilite', 'attr_list'])
+            
+            # Extraer el título del informe del contenido Markdown
+            report_title = "Informe de Análisis de Metadatos"
+            if self.args.get('only_sensitive', False):
+                report_title += " (Datos Sensibles)"
+                
+            # Obtener la fecha y hora actual
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
             # Añadir estilos CSS para mejorar la apariencia
             styled_html = f"""<!DOCTYPE html>
@@ -133,23 +157,157 @@ class Reporter:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informe de Metadatos</title>
-    {Templates.get_html_style()}
+    <title>{report_title}</title>
     <style>
-        details summary {{ 
-            cursor: pointer; 
-            font-weight: bold;
+        body {{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }}
+        
+        .header {{
+            background-color: #2C3E50;
+            color: white;
+            padding: 2em;
+            margin: -20px -20px 2em -20px;
+            text-align: center;
+        }}
+        
+        .header h1 {{
+            margin: 0;
+            font-size: 2.5em;
+            color: white;
+        }}
+        
+        .header .subtitle {{
+            font-size: 1.2em;
+            margin-top: 0.5em;
+            color: #ecf0f1;
+        }}
+        
+        .header .meta {{
+            margin-top: 1em;
+            font-size: 0.9em;
+            color: #bdc3c7;
+        }}
+        
+        .header .meta span {{
+            margin: 0 1em;
+        }}
+        
+        h1, h2, h3, h4, h5, h6 {{
+            color: #2C3E50;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+        }}
+        
+        h1 {{ font-size: 2em; }}
+        h2 {{ font-size: 1.5em; }}
+        h3 {{ font-size: 1.2em; }}
+        
+        table {{
+            border-collapse: collapse;
+            width: 100%;
             margin: 1em 0;
         }}
+        
+        th, td {{
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }}
+        
+        th {{
+            background-color: #2C3E50;
+            color: white;
+        }}
+        
+        tr:nth-child(even) {{
+            background-color: #f9f9f9;
+        }}
+        
         code {{
             background-color: #f5f5f5;
             padding: 2px 4px;
             border-radius: 3px;
+            font-family: monospace;
             font-size: 0.9em;
+        }}
+        
+        pre {{
+            background-color: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }}
+        
+        details {{
+            margin: 1em 0;
+            padding: 0.5em;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }}
+        
+        summary {{
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0.5em;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+        }}
+        
+        summary:hover {{
+            background-color: #e9e9e9;
+        }}
+        
+        footer {{
+            margin-top: 2em;
+            padding-top: 1em;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }}
+        
+        a {{
+            color: #2980b9;
+            text-decoration: none;
+        }}
+        
+        a:hover {{
+            text-decoration: underline;
+        }}
+        
+        blockquote {{
+            border-left: 4px solid #2C3E50;
+            margin: 1em 0;
+            padding-left: 1em;
+            color: #666;
+        }}
+        
+        img {{
+            max-width: 100%;
+            height: auto;
+        }}
+        
+        hr {{
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 2em 0;
         }}
     </style>
 </head>
 <body>
+    <div class="header">
+        <h1>{report_title}</h1>
+        <div class="subtitle">Directorio analizado: {self._sanitize_text(os.path.relpath(src_path, self.output_path))}</div>
+        <div class="meta">
+            <span>Fecha: {current_time}</span>
+            <span>Autor: MetaInfo Tool</span>
+        </div>
+    </div>
     {html_content}
     <footer>
         <p>Informe generado por MetaInfo Tool - {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
@@ -168,7 +326,7 @@ class Reporter:
     
     def _generate_pdf_from_markdown(self, md_path):
         """
-        Genera un informe en formato PDF a partir de un archivo Markdown.
+        Genera un informe en formato PDF a partir de un archivo Markdown usando pandoc.
         
         Args:
             md_path: Ruta al archivo Markdown
@@ -188,33 +346,30 @@ class Reporter:
         pdf_path = os.path.join(report_dir, f"{base_name}.pdf")
         
         try:
-            # Configurar argumentos básicos de pandoc
+            # Configurar argumentos básicos de pandoc con opciones más seguras
             extra_args = [
-                '--standalone',
                 '--pdf-engine=xelatex',
-                '--variable=fontsize=11pt',
-                '--variable=mainfont=DejaVu Sans',
-                '--variable=monofont=DejaVu Sans Mono',
                 '--variable=geometry:margin=2cm',
                 '--variable=documentclass:article',
                 '--variable=colorlinks=true',
                 '--variable=linkcolor=blue',
-                '--variable=urlcolor=blue'
+                '--variable=urlcolor=blue',
+                '--strip-comments',  # Eliminar comentarios LaTeX para evitar conflictos
+                '--no-highlight',  # Desactivar resaltado de sintaxis para evitar errores
+                '--toc'  # Tabla de contenidos
             ]
             
-            # Crear archivo temporal con encabezado LaTeX básico
+            # Crear archivo temporal con encabezado LaTeX básico y mínimo
             with tempfile.NamedTemporaryFile(suffix='.tex', delete=False, mode='w', encoding='utf-8') as temp_header:
                 temp_header.write("""\\usepackage{booktabs}
 \\usepackage{longtable}
 \\usepackage{array}
-\\usepackage{hyperref}
 \\usepackage{fontspec}
-\\setmainfont{DejaVu Sans}
-\\setmonofont{DejaVu Sans Mono}
 
 % Configuración básica para tablas
 \\renewcommand{\\arraystretch}{1.2}
-\\setlength{\\tabcolsep}{8pt}""")
+\\setlength{\\tabcolsep}{8pt}
+""")
                 header_file = temp_header.name
                 extra_args.extend(['--include-in-header', header_file])
             
@@ -222,22 +377,46 @@ class Reporter:
             with open(md_path, 'r', encoding='utf-8') as f:
                 md_content = f.read()
             
+            # Limpiar caracteres problemáticos - sanitizar todo el contenido
+            sanitized_md_content = ""
+            lines = md_content.split('\n')
+            for line in lines:
+                # Mantener las líneas de YAML y Markdown intactas
+                if line.startswith('---') or line.startswith('#') or line.startswith('```') or line == '':
+                    sanitized_md_content += line + '\n'
+                else:
+                    # Sanitizar el contenido de texto
+                    sanitized_line = self._sanitize_text(line)
+                    sanitized_md_content += sanitized_line + '\n'
+            
+            # Guardar en un archivo temporal
             with tempfile.NamedTemporaryFile(suffix='.md', delete=False, mode='w', encoding='utf-8') as temp_md:
-                temp_md.write(md_content)
+                temp_md.write(sanitized_md_content)
                 temp_md_path = temp_md.name
             
-            # Intentar conversión a PDF
+            # Agregar un tempfile para los mensajes de error
+            with tempfile.NamedTemporaryFile(suffix='.log', delete=False, mode='w', encoding='utf-8') as temp_log:
+                log_file = temp_log.name
+            
+            # Primero intentar la conversión directa a PDF
             try:
-                output = pypandoc.convert_file(temp_md_path, 'pdf', outputfile=pdf_path, extra_args=extra_args)
-                Messages.print_info("Conversión a PDF completada con éxito.")
+                Messages.print_info("Intentando conversión directa a PDF...")
+                output = pypandoc.convert_file(
+                    temp_md_path, 
+                    'pdf', 
+                    outputfile=pdf_path, 
+                    extra_args=extra_args
+                )
+                Messages.print_info("Conversión directa a PDF completada con éxito.")
+                success = True
             except Exception as e:
-                Messages.print_error(f"Error en conversión a PDF: {str(e)}")
+                Messages.print_error(f"Error en conversión directa a PDF: {str(e)}")
                 Messages.print_error(Messages.ERROR_PDF_CONVERSION_FAILED)
                 Messages.print_info(Messages.LATEX_RECOMMENDATIONS)
-                return None
+                success = False
             
             # Limpiar archivos temporales
-            for temp_file in [temp_md_path, header_file]:
+            for temp_file in [temp_md_path, header_file, log_file]:
                 try:
                     if os.path.exists(temp_file):
                         os.unlink(temp_file)
@@ -255,7 +434,68 @@ class Reporter:
             Messages.print_error(f"Error general al generar PDF: {str(e)}")
             Messages.print_info(Messages.LATEX_RECOMMENDATIONS)
             return None
+        
+    def _sanitize_text(self, text):
+        """
+        Limpia el texto de caracteres especiales y de control que podrían causar problemas
+        en la generación de PDF o HTML.
+        
+        Args:
+            text: Texto a sanitizar
             
+        Returns:
+            str: Texto sanitizado
+        """
+        if not isinstance(text, str):
+            text = str(text)
+            
+        # Eliminar caracteres de control invisibles (excepto espacios en blanco comunes)
+        text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]', '', text)
+        
+        # Para uso en Markdown que luego se convertirá a PDF, es mejor simplificar
+        # y eliminar caracteres problemáticos en lugar de escaparlos con comandos LaTeX
+        text = re.sub(r'[\\{}$&#^_~%]', ' ', text)
+        
+        # Reemplazar barras invertidas múltiples que podrían causar problemas
+        text = re.sub(r'\\+', ' ', text)
+        
+        # Reemplazar caracteres Unicode problemáticos
+        text = text.replace('–', '-')  # En-dash
+        text = text.replace('—', '-')  # Em-dash
+        text = text.replace("'", "'")  # Comilla simple
+        text = text.replace('"', '"')  # Comilla doble izquierda
+        text = text.replace('"', '"')  # Comilla doble derecha
+        text = text.replace('…', '...') # Elipsis
+        
+        # Reemplazar caracteres acentuados con sus equivalentes ASCII
+        replacements = {
+            'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
+            'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U',
+            'ñ': 'n', 'Ñ': 'N',
+            'ü': 'u', 'Ü': 'U',
+            'ç': 'c', 'Ç': 'C',
+            'à': 'a', 'è': 'e', 'ì': 'i', 'ò': 'o', 'ù': 'u',
+            'À': 'A', 'È': 'E', 'Ì': 'I', 'Ò': 'O', 'Ù': 'U',
+            'ä': 'a', 'ë': 'e', 'ï': 'i', 'ö': 'o', 'ü': 'u',
+            'Ä': 'A', 'Ë': 'E', 'Ï': 'I', 'Ö': 'O', 'Ü': 'U',
+            'â': 'a', 'ê': 'e', 'î': 'i', 'ô': 'o', 'û': 'u',
+            'Â': 'A', 'Ê': 'E', 'Î': 'I', 'Ô': 'O', 'Û': 'U',
+            '©': '(c)', '®': '(R)', '™': '(TM)',
+            '€': 'EUR', '£': 'GBP', '¥': 'JPY',
+            '°': ' grados ', '²': '2', '³': '3',
+            '±': '+/-', '×': 'x', '÷': '/',
+            '≤': '<=', '≥': '>=', '≠': '!=',
+            '≈': '~=', '≡': '==='
+        }
+        
+        for original, replacement in replacements.items():
+            text = text.replace(original, replacement)
+        
+        # Eliminar cualquier otro carácter no ASCII
+        text = re.sub(r'[^\x00-\x7F]+', '', text)
+        
+        return text
+        
     def _generate_markdown_content(self, src_path, metadata_info):
         """
         Genera el contenido del informe en formato Markdown.
@@ -281,7 +521,7 @@ class Reporter:
 title: "{report_title}"
 author: "MetaInfo Tool"
 date: "{current_time}"
-subtitle: "Directorio analizado: {os.path.relpath(src_path, self.output_path)}"
+subtitle: "Directorio analizado: {self._sanitize_text(os.path.relpath(src_path, self.output_path))}"
 titlepage: true
 titlepage-color: "2C3E50"
 titlepage-text-color: "FFFFFF"
@@ -299,7 +539,7 @@ classoption: oneside
         content = yaml_header + f"""# {report_title}
 
 ## Información General
-- **Directorio analizado**: `{os.path.relpath(src_path, self.output_path)}`
+- **Directorio analizado**: `{self._sanitize_text(os.path.relpath(src_path, self.output_path))}`
 - **Fecha del análisis**: {current_time}
 - **Total de archivos analizados**: {metadata_info.get('total_files', 0)}
 - **Archivos con metadatos**: {metadata_info.get('files_with_metadata', 0)}
@@ -312,7 +552,7 @@ classoption: oneside
         
         # Añadir estadísticas por tipo de archivo
         for ext, stats in metadata_info.get('extensions_stats', {}).items():
-            content += f"| {ext} | {stats['count']} | {stats['with_metadata']} | {stats['with_sensitive']} |\n"
+            content += f"| {self._sanitize_text(ext)} | {stats['count']} | {stats['with_metadata']} | {stats['with_sensitive']} |\n"
             
         # Añadir detalles de cada archivo con metadatos
         content += "\n## Detalles por Archivo\n\n"
@@ -324,8 +564,8 @@ classoption: oneside
             total_metadata = file_info.get('total_metadata', 0)
             has_sensitive = file_info.get('has_sensitive', False)
             
-            content += f"### {os.path.basename(file_path)}\n\n"
-            content += f"**Ruta relativa**: `{rel_path}`\n\n"
+            content += f"### {self._sanitize_text(os.path.basename(file_path))}\n\n"
+            content += f"**Ruta relativa**: `{self._sanitize_text(rel_path)}`\n\n"
             content += f"**Total de campos de metadatos**: {total_metadata}\n\n"
             if (has_sensitive):
               content += f"**Estado de datos sensibles**: {'Se han encontrado coincidencias de datos sensibles'}\n\n"
@@ -336,12 +576,15 @@ classoption: oneside
             
             # Añadir cada campo de metadatos
             for metadata_entry in file_info.get('metadata', []):
-                key = metadata_entry.get('key', '')
-                value = str(metadata_entry.get('value', '')).replace('|', '\\|').replace('\n', ' ')
+                key = self._sanitize_text(metadata_entry.get('key', ''))
+                raw_value = str(metadata_entry.get('value', '')).replace('|', '\\|').replace('\n', ' ')
                 
                 # Convertir rutas absolutas a relativas si es necesario
-                if os.path.isabs(value) and os.path.exists(value):
-                    value = os.path.relpath(value, self.main.src_path)
+                if os.path.isabs(raw_value) and os.path.exists(raw_value):
+                    raw_value = os.path.relpath(raw_value, self.main.src_path)
+                
+                # Sanitizar el valor
+                value = self._sanitize_text(raw_value)
                 
                 is_sensitive = metadata_entry.get('is_sensitive', False)
                 patterns = metadata_entry.get('matching_patterns', [])
@@ -351,7 +594,7 @@ classoption: oneside
                     value = value[:97] + "..."
                     
                 sensitive_status = "Sí" if is_sensitive else "No"
-                patterns_str = ", ".join(patterns) if patterns else "-"
+                patterns_str = ", ".join(self._sanitize_text(pattern) for pattern in patterns) if patterns else "-"
                 
                 # Añadir fila a la tabla
                 content += f"| {key} | {value} | {sensitive_status} | {patterns_str} |\n"
@@ -523,8 +766,12 @@ A continuación se muestran los patrones utilizados por MetaInfo para identifica
                                 has_metadata = True
                                 file_info['total_metadata'] += 1
                                 
+                                # Sanitizar clave y valor para la verificación de datos sensibles
+                                clean_key = key
+                                clean_val = val
+                                
                                 # Verificar si es sensible
-                                is_sensitive, matching_patterns = self._check_sensitive_data(key, val)
+                                is_sensitive, matching_patterns = self._check_sensitive_data(clean_key, clean_val)
                                 
                                 if is_sensitive:
                                     has_sensitive_data = True

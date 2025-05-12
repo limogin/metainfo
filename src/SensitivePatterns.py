@@ -9,6 +9,12 @@ class SensitivePatterns:
         "exiftoolversion",
         "exiftool:exiftoolversion",        
         "file:filename",
+        "gif:gifversion",
+        "gifversion",
+        "pdf:useraccess",
+        "useraccess",
+        "pdf:creator",
+        "xmp:creatortool",
     ]
     
     # Patrones sensibles en español
@@ -56,7 +62,6 @@ class SensitivePatterns:
         "mac",
         "serial",
         "licencia",
-        "version",
         "sistema",
         "software"
     ]
