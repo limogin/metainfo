@@ -50,7 +50,12 @@ class SensitivePatterns:
         "postscript:aicreatorversion",
         "postscript:title",
         "postscript:aicolormodel",
-        "PDF:ContainerVersion"
+        "PDF:ContainerVersion",
+        "PDF:DXVersion",
+        "ICC Profile:ProfileVersion",
+        "ICC Profile:DeviceModel",
+        "ICC Profile:ProfileCopyright",
+        "ICC Profile:ProfileCMMType",                
     ]
     
     # Patrones sensibles en español

@@ -678,9 +678,13 @@ A continuación se muestran los patrones utilizados por MetaInfo para identifica
         key_str = str(key).lower()
         val_str = str(val).lower()
         
-        # Normalizar espacios en blanco
+        # Normalizar espacios en blanco y dos puntos
         key_str = ' '.join(key_str.split())
         val_str = ' '.join(val_str.split())
+        
+        # Normalizar dos puntos (eliminar espacios alrededor)
+        key_str = key_str.replace(' : ', ':').replace(' :', ':').replace(': ', ':')
+        val_str = val_str.replace(' : ', ':').replace(' :', ':').replace(': ', ':')
         
         # Hacer una excepción para ciertas claves
         if key_str == 'author' and not any(pattern.lower() in val_str for pattern in self.main.sensitive_patterns):
@@ -693,9 +697,19 @@ A continuación se muestran los patrones utilizados por MetaInfo para identifica
         # Verificar patrones negativos (insensible a mayúsculas/minúsculas)
         is_negative = False
         for negative_pattern in self.main.negative_patterns:
-            # Normalizar el patrón negativo también
+            # Normalizar el patrón negativo
             normalized_pattern = ' '.join(negative_pattern.lower().split())
-            if normalized_pattern in key_str:
+            normalized_pattern = normalized_pattern.replace(' : ', ':').replace(' :', ':').replace(': ', ':')
+            
+            # Crear una versión sin espacios del patrón para comparación
+            pattern_no_spaces = normalized_pattern.replace(' ', '')
+            key_no_spaces = key_str.replace(' ', '')
+            
+            # Comparar tanto la versión con espacios como sin espacios
+            if (normalized_pattern == key_str or  # Comparación exacta
+                pattern_no_spaces == key_no_spaces or  # Comparación sin espacios
+                normalized_pattern in key_str or  # Contenido parcial con espacios
+                pattern_no_spaces in key_no_spaces):  # Contenido parcial sin espacios
                 is_negative = True
                 break
             
@@ -705,6 +719,7 @@ A continuación se muestran los patrones utilizados por MetaInfo para identifica
         for pattern in self.main.sensitive_patterns:
             # Normalizar el patrón sensible
             pattern_lower = ' '.join(pattern.lower().split())
+            pattern_lower = pattern_lower.replace(' : ', ':').replace(' :', ':').replace(': ', ':')
             
             # Si el patrón tiene 3 o menos caracteres, usar coincidencia exacta
             if len(pattern_lower) <= 3:
