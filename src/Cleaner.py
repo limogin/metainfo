@@ -5,6 +5,7 @@ import exiftool
 import subprocess
 import shutil
 import traceback
+from src.SensitivePatterns import SensitivePatterns
 
 class Cleaner:
     """
@@ -86,9 +87,9 @@ class Cleaner:
                 item_path = os.path.join(directory, item)
                 
                 # Omitir archivos .txt
-                if item.lower().endswith('.txt'):
-                    Messages.print_debug(f"DEBUG-Cleaner - Omitiendo archivo .txt: {item_path}", verbose=self.verbose)
-                    continue
+                # if item.lower().endswith('.txt'):
+                #    Messages.print_debug(f"DEBUG-Cleaner - Omitiendo archivo .txt: {item_path}", verbose=self.verbose)
+                #    continue
                 
                 if os.path.isfile(item_path) and (item.lower().endswith(lower_extensions) or item.upper().endswith(upper_extensions)):
                     try:
@@ -139,11 +140,11 @@ class Cleaner:
                 except Exception as e:
                     Messages.print_error(f"No se pudo eliminar el archivo temporal existente: {str(e)}")
             
-            # Comando base para ejecutar exiftool directamente
+            # Comando base para ejecutar exiftool directamente - limpieza general
             exiftool_command = ["exiftool", "-all=", "-o", temp_file, file_path]
-            Messages.print_debug(f"DEBUG-Cleaner - Ejecutando comando: {' '.join(exiftool_command)}", verbose=self.verbose)
+            Messages.print_debug(f"DEBUG-Cleaner - Ejecutando comando de limpieza general: {' '.join(exiftool_command)}", verbose=self.verbose)
             
-            # Ejecutar el comando
+            # Ejecutar el comando de limpieza general
             result = subprocess.run(exiftool_command, capture_output=True, text=True)
             
             if result.returncode == 0:
@@ -162,22 +163,55 @@ class Cleaner:
                     # Restablecer permisos
                     os.chmod(file_path, original_perms)
                     
-                    Messages.print_info(f"Metadatos eliminados correctamente de {file_path}")
-                    return
+                    Messages.print_info(f"Limpieza general completada para {file_path}")
                 except Exception as e:
                     Messages.print_error(f"Error al reemplazar el archivo original: {str(e)}")
             else:
                 Messages.print_error(f"Error al ejecutar exiftool: {result.stderr}")
                 
-            # Si llegamos aquí, el método directo falló; intentar con la biblioteca
-            Messages.print_info(f"Intentando método alternativo para {file_path}...")
+            # Ahora realizar limpieza específica de claves sensibles
+            Messages.print_info(f"Realizando limpieza específica de claves sensibles para {file_path}...")
             
-            with exiftool.ExifToolHelper() as et:
-                # Intentar primero con -all= y -overwrite_original
-                result = et.execute("-all=", "-overwrite_original", file_path)
-                Messages.print_debug(f"DEBUG-Cleaner - Resultado de limpieza: {result}", verbose=self.verbose)
+            # Obtener las claves específicas a borrar usando la clase SensitivePatterns directamente
+            keys_to_delete = SensitivePatterns.get_keys_to_delete()
+            
+            if keys_to_delete:
+                # Crear nuevo archivo temporal para la limpieza específica
+                temp_file_specific = os.path.join(temp_dir, f"temp_specific_{os.path.basename(file_path)}")
                 
-                # Verificar si funcionó
+                # Construir comando para eliminar claves específicas
+                specific_command = ["exiftool"]
+                for key in keys_to_delete:
+                    specific_command.append(f"-{key}=")
+                specific_command.extend(["-o", temp_file_specific, file_path])
+                
+                Messages.print_debug(f"DEBUG-Cleaner - Ejecutando comando de limpieza específica: {' '.join(specific_command)}", verbose=self.verbose)
+                
+                # Ejecutar limpieza específica
+                result_specific = subprocess.run(specific_command, capture_output=True, text=True)
+                
+                if result_specific.returncode == 0:
+                    try:
+                        # Respaldar permisos originales
+                        original_perms = os.stat(file_path).st_mode
+                        
+                        # Eliminar el archivo original
+                        os.remove(file_path)
+                        
+                        # Mover el archivo temporal al lugar del original
+                        shutil.move(temp_file_specific, file_path)
+                        
+                        # Restablecer permisos
+                        os.chmod(file_path, original_perms)
+                        
+                        Messages.print_info(f"Limpieza específica de claves sensibles completada para {file_path}")
+                    except Exception as e:
+                        Messages.print_error(f"Error al reemplazar el archivo original en limpieza específica: {str(e)}")
+                else:
+                    Messages.print_error(f"Error al ejecutar limpieza específica: {result_specific.stderr}")
+            
+            # Verificación final
+            with exiftool.ExifToolHelper() as et:
                 remaining_metadata = et.get_metadata(file_path)
                 metadata_count = len(remaining_metadata[0]) if remaining_metadata and len(remaining_metadata) > 0 else 0
                 non_system_count = sum(1 for key, val in remaining_metadata[0].items() 
@@ -187,31 +221,9 @@ class Cleaner:
                                                'File:FileTypeExtension', 'File:MIMEType'])
                 
                 if non_system_count > 0:
-                    # Todavía hay metadatos no del sistema, intentar con comandos más agresivos
-                    Messages.print_info(f"Intentando limpieza más agresiva para {file_path}...")
-                    
-                    # Usar más opciones para eliminar más tipos de metadatos
-                    et.execute(
-                        "-all=", "-EXIF:all=", "-XMP:all=", "-IPTC:all=", 
-                        "-ICC_Profile:all=", "-Photoshop:all=", "-PDF:all=",
-                        "-overwrite_original", file_path
-                    )
-                    
-                    # Verificar nuevamente
-                    remaining_metadata = et.get_metadata(file_path)
-                    metadata_count = len(remaining_metadata[0]) if remaining_metadata and len(remaining_metadata) > 0 else 0
-                    non_system_count = sum(1 for key, val in remaining_metadata[0].items() 
-                                      if key not in ['SourceFile', 'ExifTool:ExifToolVersion', 'File:FileName', 'File:Directory', 
-                                                   'File:FileSize', 'File:FileModifyDate', 'File:FileAccessDate',
-                                                   'File:FileInodeChangeDate', 'File:FilePermissions', 'File:FileType', 
-                                                   'File:FileTypeExtension', 'File:MIMEType'])
-                    
-                    if non_system_count > 0:
-                        Messages.print_warning(f"No se pudieron eliminar todos los metadatos de {file_path}. Quedan {non_system_count} campos.")
-                    else:
-                        Messages.print_info(f"Metadatos eliminados correctamente de {file_path}")
+                    Messages.print_warning(f"Después de la limpieza completa y específica, aún quedan {non_system_count} campos de metadatos en {file_path}")
                 else:
-                    Messages.print_info(f"Metadatos eliminados correctamente de {file_path}")
+                    Messages.print_info(f"Limpieza completa y específica finalizada con éxito para {file_path}")
         
         except Exception as e:
             Messages.print_error(f"Error general al limpiar {file_path}: {str(e)}")

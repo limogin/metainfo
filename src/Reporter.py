@@ -593,7 +593,7 @@ classoption: oneside
                 if len(value) > 100:
                     value = value[:97] + "..."
                     
-                sensitive_status = "Sí" if is_sensitive else "No"
+                sensitive_status = "Sensible/Yes" if is_sensitive else "No"
                 patterns_str = ", ".join(self._sanitize_text(pattern) for pattern in patterns) if patterns else "-"
                 
                 # Añadir fila a la tabla
@@ -678,6 +678,10 @@ A continuación se muestran los patrones utilizados por MetaInfo para identifica
         key_str = str(key).lower()
         val_str = str(val).lower()
         
+        # Normalizar espacios en blanco
+        key_str = ' '.join(key_str.split())
+        val_str = ' '.join(val_str.split())
+        
         # Hacer una excepción para ciertas claves
         if key_str == 'author' and not any(pattern.lower() in val_str for pattern in self.main.sensitive_patterns):
             return False, []
@@ -686,11 +690,12 @@ A continuación se muestran los patrones utilizados por MetaInfo para identifica
         is_sensitive = False
         matching_patterns = []
 
+        # Verificar patrones negativos (insensible a mayúsculas/minúsculas)
         is_negative = False
         for negative_pattern in self.main.negative_patterns:
-            negative_lower = negative_pattern.lower()
-                
-            if negative_lower in key_str:
+            # Normalizar el patrón negativo también
+            normalized_pattern = ' '.join(negative_pattern.lower().split())
+            if normalized_pattern in key_str:
                 is_negative = True
                 break
             
@@ -698,7 +703,8 @@ A continuación se muestran los patrones utilizados por MetaInfo para identifica
             return False, []
         
         for pattern in self.main.sensitive_patterns:
-            pattern_lower = pattern.lower()
+            # Normalizar el patrón sensible
+            pattern_lower = ' '.join(pattern.lower().split())
             
             # Si el patrón tiene 3 o menos caracteres, usar coincidencia exacta
             if len(pattern_lower) <= 3:

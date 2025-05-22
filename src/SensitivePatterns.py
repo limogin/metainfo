@@ -3,6 +3,15 @@ class SensitivePatterns:
     Clase que define los patrones considerados sensibles para detectar en metadatos.
     """
 
+
+    KEYS_TO_DELETE = [
+        "XML:LastModifiedBy",
+        "XML:Company",
+        "XMP:Creator",
+        "PostScript:For",
+        "PostScript:Creator",
+    ]
+
     NEGATIVE_PATTERNS = [
         "sourcefile",
         "filename",    
@@ -14,7 +23,34 @@ class SensitivePatterns:
         "pdf:useraccess",
         "useraccess",
         "pdf:creator",
+        "pdf:pdfversion",
         "xmp:creatortool",
+        "quicktime:minorversion",
+        "quicktime:movieveaderversion",
+        "quicktime:trackheaderversion",
+        "quicktime:majorbrand",
+        "quicktime:minorversion",
+        "quicktime:compatiblebrand",
+        "quicktime:minorversion",
+        "quicktime:compatiblebrand",
+        "quicktime:minorversion",
+        "quicktime:compatiblebrand",
+        "xml:appversion",
+        "zip:ziprequiredversion",
+        "app14:dcteencodeversion",
+        "app14:dctencodeversion",
+        "riff:vp8version",
+        "file:mimetype",
+        "icc profile:profileversion",
+        "icc profile:devicemodel",
+        "icc profile:profilecreator",
+        "icc profile:profilecopyright",
+        "icc profile:profilecmmtype",
+        "pdf:containerversion",
+        "postscript:aicreatorversion",
+        "postscript:title",
+        "postscript:aicolormodel",
+        "PDF:ContainerVersion"
     ]
     
     # Patrones sensibles en español
@@ -181,6 +217,13 @@ class SensitivePatterns:
         "device_serial_number",
         "exif_version"
     ]
+
+    @classmethod
+    def get_keys_to_delete(cls):
+        """
+        Obtiene las claves que deben ser eliminadas.
+        """
+        return cls.KEYS_TO_DELETE
     
     @classmethod
     def get_negative_patterns(cls):
