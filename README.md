@@ -1,4 +1,3 @@
-
 # MetaInfo
 
 MetaInfo es una herramienta para inspeccionar y manipular metadatos de archivos. Permite generar informes detallados de metadatos y también eliminar metadatos de archivos de forma recursiva.
@@ -7,21 +6,21 @@ MetaInfo es una herramienta para inspeccionar y manipular metadatos de archivos.
 
 - **Análisis recursivo**: Procesa archivos en el directorio especificado y todas sus subcarpetas
 - **Generación de informes**: Crea informes en formato Markdown, HTML y opcionalmente PDF con portada profesional e índice
-- **Limpieza de metadatos**: Elimina todos los metadatos o solo aquellos considerados sensibles
+- **Limpieza de metadatos**: Elimina todos los metadatos o solo aquellos considerados sensibles usando ExifTool y mat2
 - **Detección multilingüe**: Detecta información sensible en español, inglés, francés, alemán, italiano y portugués
 - **Formatos soportados**: Imágenes (JPG, PNG, GIF, WEBP, BMP), documentos (PDF, DOCX, ODT, XLS, XLSX, PPT, PPTX), multimedia (MP3, MP4, AVI, MOV, WMV, FLV) y más
 - **Manejo robusto de errores**: Sistema centralizado de mensajes y validación de parámetros
 
-## Basado en ExifTool
+## Basado en ExifTool y mat2
 
-MetaInfo se basa en ExifTool, una potente biblioteca de código abierto que permite leer, escribir y manipular metadatos en una amplia variedad de archivos. ExifTool es capaz de extraer información técnica y metadatos de miles de tipos de archivo diferentes, incluyendo:
+MetaInfo se basa en ExifTool y mat2 (Metadata Anonymisation Toolkit), dos potentes herramientas de código abierto que permiten leer, escribir y manipular metadatos en una amplia variedad de archivos. Estas herramientas son capaces de extraer y eliminar información técnica y metadatos de miles de tipos de archivo diferentes, incluyendo:
 
 - Metadatos EXIF en imágenes (fecha, hora, configuración de cámara, ubicación GPS)
 - Información de autor y copyright en documentos
 - Datos técnicos en archivos multimedia
 - Metadatos personalizados en diversos formatos de archivo
 
-MetaInfo amplía las capacidades de ExifTool proporcionando una interfaz más amigable, generación automatizada de informes y funciones específicas para la detección y eliminación de información sensible.
+MetaInfo amplía las capacidades de ExifTool y mat2 proporcionando una interfaz más amigable, generación automatizada de informes y funciones específicas para la detección y eliminación de información sensible.
 
 ## Arquitectura y Flujo de Ejecución
 
@@ -110,6 +109,7 @@ Estos documentos técnicos facilitan la comprensión del sistema tanto para nuev
 - Python 3.6 o superior
 - Biblioteca exiftool para Python (`pip install PyExifTool>=0.5.6`)
 - ExifTool instalado en el sistema (versión 12.15 o superior)
+- mat2 (Metadata Anonymisation Toolkit) instalado en el sistema
 - PyYAML (`pip install pyyaml>=6.0`) para procesamiento de configuración
 - Pillow (`pip install pillow>=9.0.0`) para procesamiento de imágenes
 - Markdown (`pip install markdown>=3.5.0`) para procesamiento de texto
@@ -118,20 +118,22 @@ Estos documentos técnicos facilitan la comprensión del sistema tanto para nuev
 
 ## Instalación
 
-### 1. Instalar ExifTool
+### 1. Instalar ExifTool y mat2
 
 #### En sistemas basados en Debian/Ubuntu:
 ```bash
-sudo apt install libimage-exiftool-perl
+sudo apt install libimage-exiftool-perl mat2
 ```
 
 #### En sistemas basados en RHEL/CentOS:
 ```bash
-sudo yum install perl-Image-ExifTool
+sudo yum install perl-Image-ExifTool mat2
 ```
 
 #### En Windows o Mac:
-Descarga e instala desde la [página oficial de ExifTool](https://exiftool.org/)
+Descarga e instala desde las páginas oficiales:
+- [ExifTool](https://exiftool.org/)
+- [mat2](https://0xacab.org/jvoisin/mat2)
 
 ### 2. Instalar Pandoc y XeLaTeX (requerido para generación de PDF)
 
