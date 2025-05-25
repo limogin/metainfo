@@ -674,20 +674,12 @@ A continuación se muestran los patrones utilizados por MetaInfo para identifica
                 - es_sensible: True si se encontró un patrón sensible
                 - patrones_coincidentes: Lista de patrones que coincidieron
         """
-        # Convertir clave y valor a string para poder buscar coincidencias
-        key_str = str(key).lower()
-        val_str = str(val).lower()
-        
-        # Normalizar espacios en blanco y dos puntos
-        key_str = ' '.join(key_str.split())
-        val_str = ' '.join(val_str.split())
-        
-        # Normalizar dos puntos (eliminar espacios alrededor)
-        key_str = key_str.replace(' : ', ':').replace(' :', ':').replace(': ', ':')
-        val_str = val_str.replace(' : ', ':').replace(' :', ':').replace(': ', ':')
+        # Convertir clave y valor a string y normalizar (minúsculas y sin espacios)
+        key_str = str(key).lower().replace(' ', '')
+        val_str = str(val).lower().replace(' ', '')
         
         # Hacer una excepción para ciertas claves
-        if key_str == 'author' and not any(pattern.lower() in val_str for pattern in self.main.sensitive_patterns):
+        if key_str == 'author' and not any(pattern.lower().replace(' ', '') in val_str for pattern in self.main.sensitive_patterns):
             return False, []
             
         # Verificar si algún patrón sensible coincide con la clave o el valor
@@ -697,19 +689,11 @@ A continuación se muestran los patrones utilizados por MetaInfo para identifica
         # Verificar patrones negativos (insensible a mayúsculas/minúsculas)
         is_negative = False
         for negative_pattern in self.main.negative_patterns:
-            # Normalizar el patrón negativo
-            normalized_pattern = ' '.join(negative_pattern.lower().split())
-            normalized_pattern = normalized_pattern.replace(' : ', ':').replace(' :', ':').replace(': ', ':')
+            # Normalizar el patrón negativo (minúsculas y sin espacios)
+            normalized_pattern = negative_pattern.lower().replace(' ', '')
             
-            # Crear una versión sin espacios del patrón para comparación
-            pattern_no_spaces = normalized_pattern.replace(' ', '')
-            key_no_spaces = key_str.replace(' ', '')
-            
-            # Comparar tanto la versión con espacios como sin espacios
-            if (normalized_pattern == key_str or  # Comparación exacta
-                pattern_no_spaces == key_no_spaces or  # Comparación sin espacios
-                normalized_pattern in key_str or  # Contenido parcial con espacios
-                pattern_no_spaces in key_no_spaces):  # Contenido parcial sin espacios
+            # Comparar versiones normalizadas
+            if normalized_pattern in key_str:
                 is_negative = True
                 break
             
@@ -717,9 +701,8 @@ A continuación se muestran los patrones utilizados por MetaInfo para identifica
             return False, []
         
         for pattern in self.main.sensitive_patterns:
-            # Normalizar el patrón sensible
-            pattern_lower = ' '.join(pattern.lower().split())
-            pattern_lower = pattern_lower.replace(' : ', ':').replace(' :', ':').replace(': ', ':')
+            # Normalizar el patrón sensible (minúsculas y sin espacios)
+            pattern_lower = pattern.lower().replace(' ', '')
             
             # Si el patrón tiene 3 o menos caracteres, usar coincidencia exacta
             if len(pattern_lower) <= 3:

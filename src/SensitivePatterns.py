@@ -41,11 +41,7 @@ class SensitivePatterns:
         "app14:dctencodeversion",
         "riff:vp8version",
         "file:mimetype",
-        "icc profile:profileversion",
-        "icc profile:devicemodel",
         "icc profile:profilecreator",
-        "icc profile:profilecopyright",
-        "icc profile:profilecmmtype",
         "pdf:containerversion",
         "postscript:aicreatorversion",
         "postscript:title",
@@ -147,8 +143,7 @@ class SensitivePatterns:
         "position",
         "title",
         "role",
-        "license",
-        "version",
+        "license",        
         "system",
         "os",
         "operating_system"
@@ -219,8 +214,7 @@ class SensitivePatterns:
         "camera_serial",
         "body_serial_number",
         "lens_serial_number",
-        "device_serial_number",
-        "exif_version"
+        "device_serial_number",        
     ]
 
     @classmethod

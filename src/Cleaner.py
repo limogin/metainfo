@@ -117,6 +117,110 @@ class Cleaner:
             traceback.print_exc()
             return files_found
         
+    def _get_real_file_type(self, file_path):
+        """
+        Detecta el tipo real del archivo, incluso si tiene extensiones combinadas.
+        
+        Args:
+            file_path: Ruta al archivo
+            
+        Returns:
+            str: Tipo de archivo ('pdf', 'xlsx', 'docx' o None)
+        """
+        try:
+            # Obtener la extensión base (la primera extensión)
+            base_ext = os.path.splitext(file_path)[1].lower()
+            
+            # Si es un archivo .txt, verificar si es realmente otro tipo
+            if base_ext == '.txt':
+                # Leer los primeros bytes del archivo para detectar el tipo real
+                with open(file_path, 'rb') as f:
+                    header = f.read(8)  # Leer los primeros 8 bytes
+                    
+                    # Detectar PDF por su firma mágica
+                    if header.startswith(b'%PDF-'):
+                        return 'pdf'
+                    
+                    # Detectar XLSX por su firma mágica (PK\x03\x04)
+                    if header.startswith(b'PK\x03\x04'):
+                        return 'xlsx'
+                    
+                    # Detectar DOCX por su firma mágica (PK\x03\x04)
+                    if header.startswith(b'PK\x03\x04'):
+                        return 'docx'
+            
+            # Si no es .txt, verificar la extensión directamente
+            if base_ext in ['.pdf', '.xlsx', '.docx']:
+                return base_ext[1:]  # Quitar el punto de la extensión
+                
+            return None
+            
+        except Exception as e:
+            Messages.print_error(f"Error al detectar tipo de archivo {file_path}: {str(e)}")
+            return None
+
+    def _verify_pdf_integrity(self, file_path):
+        """
+        Verifica la integridad de un archivo PDF antes de procesarlo.
+        
+        Args:
+            file_path: Ruta al archivo PDF
+            
+        Returns:
+            bool: True si el archivo es válido, False si está corrupto
+        """
+        try:
+            Messages.print_debug(f"DEBUG-Cleaner - Verificando integridad de {file_path}", verbose=self.verbose)
+            
+            # Verificar que el archivo existe y tiene tamaño
+            if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+                Messages.print_error(f"El archivo {file_path} no existe o está vacío")
+                return False
+                
+            # Verificar firma PDF
+            with open(file_path, 'rb') as f:
+                if not f.read(8).startswith(b'%PDF-'):
+                    Messages.print_error(f"El archivo {file_path} no es un PDF válido")
+                    return False
+                    
+            # Intentar reparar con qpdf
+            try:
+                qpdf_path = subprocess.run(["which", "qpdf"], capture_output=True, text=True).stdout.strip()
+                if not qpdf_path:
+                    Messages.print_warning("qpdf no está instalado")
+                    return False
+                    
+                temp_file = f"{file_path}.qpdf_temp"
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
+                    
+                # Comando de reparación
+                repair_command = [qpdf_path, "--decrypt", "--linearize", "--object-streams=generate", file_path, temp_file]
+                Messages.print_debug(f"DEBUG-Cleaner - Ejecutando qpdf: {' '.join(repair_command)}", verbose=self.verbose)
+                
+                result = subprocess.run(repair_command, capture_output=True, text=True, timeout=30)
+                
+                if result.returncode == 0 and os.path.exists(temp_file) and os.path.getsize(temp_file) > 0:
+                    os.replace(temp_file, file_path)
+                    Messages.print_info(f"PDF reparado exitosamente: {file_path}")
+                    return True
+                else:
+                    Messages.print_warning(f"No se pudo reparar el PDF: {result.stderr}")
+                    return False
+                    
+            except Exception as e:
+                Messages.print_warning(f"Error al usar qpdf: {str(e)}")
+                return False
+                
+        except Exception as e:
+            Messages.print_error(f"Error al verificar PDF {file_path}: {str(e)}")
+            return False
+        finally:
+            # Limpiar archivo temporal si existe
+            temp_file = f"{file_path}.qpdf_temp"
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+
     def _clean_all_metadata(self, file_path):
         """
         Limpia todos los metadatos de un archivo, manteniendo el resto.
@@ -127,87 +231,74 @@ class Cleaner:
         Messages.print_debug(f"DEBUG-Cleaner - Iniciando limpieza completa de {file_path}", verbose=self.verbose)
         
         try:
-            # Primero, intentar usando el método directo de la línea de comandos
+            # Verificar si es un PDF y su integridad inicial
+            real_type = self._get_real_file_type(file_path)
+            if real_type == 'pdf':
+                if not self._verify_pdf_integrity(file_path):
+                    Messages.print_error(f"No se puede procesar el PDF corrupto: {file_path}")
+                    return
             
-            # Crear un archivo temporal para guardar la salida
-            temp_dir = os.path.dirname(file_path)
-            temp_file = os.path.join(temp_dir, f"temp_{os.path.basename(file_path)}")
+            # 1. Primero usar mat2 para PDFs y XLSX
+            if real_type in ['pdf', 'xlsx', 'docx']:
+                Messages.print_info(f"Realizando limpieza inicial con mat2 para {real_type.upper()} {file_path}...")
+                
+                # Comando mat2 para limpiar metadatos
+                mat_command = ["mat2", "--inplace", file_path]
+                Messages.print_debug(f"DEBUG-Cleaner - Ejecutando comando mat2: {' '.join(mat_command)}", verbose=self.verbose)
+                
+                result_mat = subprocess.run(mat_command, capture_output=True, text=True)
+                if result_mat.returncode != 0:
+                    Messages.print_error(f"Error al ejecutar mat2: {result_mat.stderr}")
+                else:
+                    Messages.print_info(f"Limpieza con mat2 completada para {file_path}")
+                    
+                    # Si es PDF, verificar integridad después de mat2
+                    if real_type == 'pdf':
+                        if not self._verify_pdf_integrity(file_path):
+                            Messages.print_warning(f"El PDF quedó corrupto después de mat2, intentando reparar...")
+                            if not self._verify_pdf_integrity(file_path):
+                                Messages.print_error(f"No se pudo reparar el PDF después de mat2: {file_path}")
+                                return
             
-            # Borrar el archivo temporal si ya existe
-            if os.path.exists(temp_file):
-                try:
-                    os.remove(temp_file)
-                except Exception as e:
-                    Messages.print_error(f"No se pudo eliminar el archivo temporal existente: {str(e)}")
+            # 2. Limpieza general con exiftool
+            Messages.print_info(f"Realizando limpieza general con exiftool para {file_path}...")
             
-            # Comando base para ejecutar exiftool directamente - limpieza general
-            exiftool_command = ["exiftool", "-all=", "-o", temp_file, file_path]
+            # Comando para limpiar todo y sobrescribir el original
+            exiftool_command = ["exiftool", "-all=", "-overwrite_original", file_path]
             Messages.print_debug(f"DEBUG-Cleaner - Ejecutando comando de limpieza general: {' '.join(exiftool_command)}", verbose=self.verbose)
             
-            # Ejecutar el comando de limpieza general
             result = subprocess.run(exiftool_command, capture_output=True, text=True)
             
-            if result.returncode == 0:
-                # El comando fue exitoso, reemplazar el archivo original con el temporal
-                Messages.print_debug(f"DEBUG-Cleaner - Comando exitoso, reemplazando archivo original", verbose=self.verbose)
-                try:
-                    # Respaldar permisos originales
-                    original_perms = os.stat(file_path).st_mode
-                    
-                    # Eliminar el archivo original
-                    os.remove(file_path)
-                    
-                    # Mover el archivo temporal al lugar del original
-                    shutil.move(temp_file, file_path)
-                    
-                    # Restablecer permisos
-                    os.chmod(file_path, original_perms)
-                    
-                    Messages.print_info(f"Limpieza general completada para {file_path}")
-                except Exception as e:
-                    Messages.print_error(f"Error al reemplazar el archivo original: {str(e)}")
-            else:
-                Messages.print_error(f"Error al ejecutar exiftool: {result.stderr}")
-                
-            # Ahora realizar limpieza específica de claves sensibles
+            if result.returncode != 0:
+                if "Invalid xref table" in result.stderr and real_type == 'pdf':
+                    Messages.print_warning(f"El PDF tiene una tabla de referencias inválida después de la limpieza. Intentando reparar...")
+                    if self._verify_pdf_integrity(file_path):
+                        # Intentar la limpieza nuevamente después de la reparación
+                        result = subprocess.run(exiftool_command, capture_output=True, text=True)
+                        if result.returncode != 0:
+                            Messages.print_error(f"Error al ejecutar limpieza general con exiftool después de reparación: {result.stderr}")
+                            return
+                    else:
+                        Messages.print_error(f"No se pudo reparar el PDF después de la limpieza: {file_path}")
+                        return
+                else:
+                    Messages.print_error(f"Error al ejecutar limpieza general con exiftool: {result.stderr}")
+                    return
+            
+            # 3. Limpieza específica de claves sensibles
             Messages.print_info(f"Realizando limpieza específica de claves sensibles para {file_path}...")
             
-            # Obtener las claves específicas a borrar usando la clase SensitivePatterns directamente
             keys_to_delete = SensitivePatterns.get_keys_to_delete()
-            
             if keys_to_delete:
-                # Crear nuevo archivo temporal para la limpieza específica
-                temp_file_specific = os.path.join(temp_dir, f"temp_specific_{os.path.basename(file_path)}")
-                
-                # Construir comando para eliminar claves específicas
                 specific_command = ["exiftool"]
                 for key in keys_to_delete:
                     specific_command.append(f"-{key}=")
-                specific_command.extend(["-o", temp_file_specific, file_path])
+                specific_command.extend(["-overwrite_original", file_path])
                 
                 Messages.print_debug(f"DEBUG-Cleaner - Ejecutando comando de limpieza específica: {' '.join(specific_command)}", verbose=self.verbose)
                 
-                # Ejecutar limpieza específica
                 result_specific = subprocess.run(specific_command, capture_output=True, text=True)
-                
-                if result_specific.returncode == 0:
-                    try:
-                        # Respaldar permisos originales
-                        original_perms = os.stat(file_path).st_mode
-                        
-                        # Eliminar el archivo original
-                        os.remove(file_path)
-                        
-                        # Mover el archivo temporal al lugar del original
-                        shutil.move(temp_file_specific, file_path)
-                        
-                        # Restablecer permisos
-                        os.chmod(file_path, original_perms)
-                        
-                        Messages.print_info(f"Limpieza específica de claves sensibles completada para {file_path}")
-                    except Exception as e:
-                        Messages.print_error(f"Error al reemplazar el archivo original en limpieza específica: {str(e)}")
-                else:
+                if result_specific.returncode != 0:
                     Messages.print_error(f"Error al ejecutar limpieza específica: {result_specific.stderr}")
             
             # Verificación final
@@ -221,9 +312,17 @@ class Cleaner:
                                                'File:FileTypeExtension', 'File:MIMEType'])
                 
                 if non_system_count > 0:
-                    Messages.print_warning(f"Después de la limpieza completa y específica, aún quedan {non_system_count} campos de metadatos en {file_path}")
+                    Messages.print_warning(f"Después de la limpieza, aún quedan {non_system_count} campos de metadatos en {file_path}")
+                    if self.verbose:
+                        Messages.print_debug("Campos restantes:", verbose=True)
+                        for key, val in remaining_metadata[0].items():
+                            if key not in ['SourceFile', 'ExifTool:ExifToolVersion', 'File:FileName', 'File:Directory', 
+                                         'File:FileSize', 'File:FileModifyDate', 'File:FileAccessDate',
+                                         'File:FileInodeChangeDate', 'File:FilePermissions', 'File:FileType', 
+                                         'File:FileTypeExtension', 'File:MIMEType']:
+                                Messages.print_debug(f"  {key}: {val}", verbose=True)
                 else:
-                    Messages.print_info(f"Limpieza completa y específica finalizada con éxito para {file_path}")
+                    Messages.print_info(f"Limpieza finalizada con éxito para {file_path}")
         
         except Exception as e:
             Messages.print_error(f"Error general al limpiar {file_path}: {str(e)}")
